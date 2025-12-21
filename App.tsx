@@ -48,24 +48,38 @@ const App: React.FC = () => {
   useEffect(() => {
     // Gestisci callback OAuth (Supabase può usare hash o query params)
     const handleOAuthCallback = async () => {
+      console.log('=== OAUTH CALLBACK HANDLER ===');
+      console.log('User Agent:', navigator.userAgent);
+      console.log('Is Mobile:', /Mobile|Android|iPhone|iPad/.test(navigator.userAgent));
+      console.log('Current URL:', window.location.href);
+      console.log('Hash:', window.location.hash);
+      console.log('Search:', window.location.search);
+      
       // Controlla hash (es: #access_token=...)
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       // Controlla query params (es: ?access_token=...)
       const queryParams = new URLSearchParams(window.location.search);
+      
+      console.log('Hash params:', Object.fromEntries(hashParams));
+      console.log('Query params:', Object.fromEntries(queryParams));
       
       const accessToken = hashParams.get('access_token') || queryParams.get('access_token');
       const error = hashParams.get('error') || queryParams.get('error');
       const errorDescription = hashParams.get('error_description') || queryParams.get('error_description');
       
       if (error) {
-        console.error('OAuth error:', error, errorDescription);
+        console.error('=== OAUTH ERROR ===');
+        console.error('Error:', error);
+        console.error('Error description:', errorDescription);
         // Rimuovi hash/query dalla URL
         window.history.replaceState({}, document.title, window.location.pathname);
         setLoading(false);
+        alert(`Errore OAuth: ${error}${errorDescription ? ' - ' + errorDescription : ''}`);
         return;
       }
       
       if (accessToken) {
+        console.log('=== OAUTH SUCCESS - ACCESS TOKEN FOUND ===');
         // L'utente è tornato da OAuth
         // Rimuovi hash/query dalla URL
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -73,24 +87,45 @@ const App: React.FC = () => {
         setLoading(true);
         
         try {
+          // Verifica sessione Supabase prima di aspettare
+          console.log('Checking Supabase session...');
+          const { data: { session: initialSession } } = await supabase.auth.getSession();
+          console.log('Initial session:', initialSession ? 'Found' : 'Not found');
+          
           // Aspetta che Supabase processi la sessione (aumentato a 2 secondi)
+          console.log('Waiting 2 seconds for Supabase to process session...');
           await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Verifica sessione dopo l'attesa
+          const { data: { session: sessionAfterWait } } = await supabase.auth.getSession();
+          console.log('Session after wait:', sessionAfterWait ? 'Found' : 'Not found');
+          if (sessionAfterWait) {
+            console.log('Session user ID:', sessionAfterWait.user.id);
+            console.log('Session expires at:', new Date(sessionAfterWait.expires_at! * 1000).toISOString());
+          }
           
           // Prova più volte a ottenere l'utente (retry logic)
           let user = null;
-          let retries = 3;
+          let retries = 5; // Aumentato a 5 tentativi
           while (!user && retries > 0) {
+            console.log(`Attempting to get user... ${retries} attempts left`);
             user = await authService.getCurrentUser();
             if (!user) {
               retries--;
               if (retries > 0) {
                 console.log(`Retrying to get user... ${retries} attempts left`);
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                // Verifica sessione prima di riprovare
+                const { data: { session: retrySession } } = await supabase.auth.getSession();
+                console.log('Session on retry:', retrySession ? 'Found' : 'Not found');
+                await new Promise(resolve => setTimeout(resolve, 1500)); // Aumentato a 1.5 secondi
               }
+            } else {
+              console.log('✓ User retrieved successfully:', user.id, user.nickname);
             }
           }
           
           if (user) {
+            console.log('=== OAUTH LOGIN SUCCESS ===');
             setIsGuest(false);
             setNickname(user.nickname);
             setAvatarUrl(user.avatar_url || null);
@@ -119,20 +154,37 @@ const App: React.FC = () => {
               console.warn('Error loading stats:', e);
             }
             
+            setCurrentUserId(user.id);
             setActiveTab('home');
+            console.log('✓ User logged in successfully');
           } else {
+            console.error('=== OAUTH LOGIN FAILED ===');
             console.error('Failed to get user after OAuth - retries exhausted');
             console.error('Access token present:', !!accessToken);
             console.error('Current URL:', window.location.href);
-            alert('Errore: impossibile eseguire l\'accesso. Verifica la console per dettagli.');
+            
+            // Verifica sessione finale
+            const { data: { session: finalSession }, error: sessionError } = await supabase.auth.getSession();
+            console.error('Final session check:', finalSession ? 'Found' : 'Not found');
+            if (sessionError) {
+              console.error('Session error:', sessionError);
+            }
+            
+            // Verifica se i cookie sono abilitati
+            console.error('Cookies enabled:', navigator.cookieEnabled);
+            
+            alert('Errore: impossibile eseguire l\'accesso. Verifica:\n1. I cookie sono abilitati nel browser\n2. Non ci sono estensioni che bloccano i cookie\n3. Controlla la console per dettagli.');
           }
         } catch (error) {
-          console.error('Error in OAuth callback:', error);
+          console.error('=== OAUTH CALLBACK EXCEPTION ===');
+          console.error('Error:', error);
           console.error('Error details:', error instanceof Error ? error.stack : error);
           alert('Errore durante il login: ' + (error instanceof Error ? error.message : 'Errore sconosciuto'));
         } finally {
           setLoading(false);
         }
+      } else {
+        console.log('No OAuth callback detected');
       }
     };
     

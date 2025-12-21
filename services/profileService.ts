@@ -166,24 +166,29 @@ export const profileService = {
   async isNicknameAvailable(nickname: string): Promise<boolean> {
     if (!nickname || nickname.length < 2) return false;
 
-    const { data, error } = await supabase
-      .from('users')
-      .select('id')
-      .eq('nickname', nickname)
-      .limit(1)
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('id')
+        .eq('nickname', nickname)
+        .limit(1);
 
-    if (error) {
-      // Se l'errore è "PGRST116" (nessun risultato), il nickname è disponibile
-      if (error.code === 'PGRST116') {
-        return true;
+      if (error) {
+        // Se l'errore è "PGRST116" (nessun risultato), il nickname è disponibile
+        if (error.code === 'PGRST116') {
+          return true;
+        }
+        // Se è un errore 406 o altro, considera il nickname disponibile (verrà verificato lato server)
+        console.warn('Error checking nickname availability (non-critical):', error);
+        return true; // Ottimisticamente considera disponibile, verrà verificato durante la registrazione
       }
-      console.error('Error checking nickname availability:', error);
-      return false;
-    }
 
-    // Se c'è un risultato, il nickname è già in uso
-    return !data;
+      // Se c'è un risultato, il nickname è già in uso
+      return !data || data.length === 0;
+    } catch (error) {
+      console.warn('Exception checking nickname availability (non-critical):', error);
+      return true; // Ottimisticamente considera disponibile
+    }
   }
 };
 

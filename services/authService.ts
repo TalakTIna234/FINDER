@@ -90,25 +90,40 @@ class AuthService {
       return { user: null, error: 'Failed to create user' };
     }
 
-    // Crea profilo
-    const profile = await profileService.upsertProfile({
-      nickname,
-      email: data.user.email,
-      provider: 'email'
-    });
+    // IMPORTANTE: Se l'email non è confermata, Supabase non crea una sessione attiva
+    // Non possiamo creare il profilo ora perché richiede autenticazione
+    // Il profilo verrà creato quando l'utente conferma l'email e fa login
+    
+    // Verifica se l'email è già confermata (raro, ma possibile se auto-confirm è attivo)
+    if (data.session && data.user.email_confirmed_at) {
+      // Email già confermata - crea profilo e statistiche
+      const profile = await profileService.upsertProfile({
+        nickname,
+        email: data.user.email,
+        provider: 'email'
+      });
 
-    // Crea statistiche iniziali
-    await statsService.createStats(data.user.id);
+      if (profile) {
+        await statsService.createStats(data.user.id);
+        
+        return {
+          user: {
+            id: profile.id,
+            email: profile.email,
+            nickname: profile.nickname,
+            avatar_url: profile.avatar_url,
+            provider: profile.provider
+          },
+          error: null
+        };
+      }
+    }
 
+    // Email non confermata - l'utente deve confermare prima di poter accedere
+    // Il profilo verrà creato al primo login dopo la conferma
     return {
-      user: profile ? {
-        id: profile.id,
-        email: profile.email,
-        nickname: profile.nickname,
-        avatar_url: profile.avatar_url,
-        provider: profile.provider
-      } : null,
-      error: null
+      user: null,
+      error: null // Nessun errore, ma l'utente deve confermare l'email
     };
   }
 

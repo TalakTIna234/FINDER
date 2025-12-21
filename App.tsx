@@ -492,8 +492,10 @@ const App: React.FC = () => {
                              return;
                            }
                            
-                           if (result.user) {
-                             alert('Registrazione completata! Controlla la tua email per confermare l\'account. Dopo la conferma potrai accedere.');
+                           // Se non c'è errore, la registrazione è andata a buon fine
+                           // (anche se result.user è null perché l'email deve essere confermata)
+                           if (!result.error) {
+                             alert('Registrazione completata! Controlla la tua email per confermare l\'account. Dopo aver cliccato il link nella email, potrai accedere con le tue credenziali.');
                              // Non fare login automatico - l'utente deve confermare l'email
                              setLoading(false);
                              setShowEmailAuth(false);
@@ -503,7 +505,7 @@ const App: React.FC = () => {
                              setIsSignUp(false);
                              return;
                            } else {
-                             alert('Errore durante la registrazione. Riprova.');
+                             alert('Errore durante la registrazione: ' + result.error);
                              setLoading(false);
                              return;
                            }

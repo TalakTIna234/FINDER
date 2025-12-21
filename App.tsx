@@ -13,6 +13,7 @@ import { friendsService } from './services/friendsService';
 import { playlistService } from './services/playlistService';
 import { statsService } from './services/statsService';
 import { AvatarUpload } from './components/AvatarUpload';
+import { EmailInput } from './components/EmailInput';
 
 type Tab = 'home' | 'playlist' | 'profile';
 

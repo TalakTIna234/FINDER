@@ -50,18 +50,29 @@ class AuthService {
   }
 
   // Sign up con email
-  async signUpWithEmail(email: string, password: string, nickname: string): Promise<AuthUser | null> {
+  async signUpWithEmail(email: string, password: string, nickname: string): Promise<{ user: AuthUser | null; error: string | null }> {
     const { data, error } = await supabase.auth.signUp({
       email,
-      password
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}`
+      }
     });
 
     if (error) {
       console.error('Error signing up:', error);
-      return null;
+      
+      // Se l'email è già registrata, suggerisci il login
+      if (error.message.includes('already registered') || error.message.includes('User already registered')) {
+        return { user: null, error: 'EMAIL_EXISTS' };
+      }
+      
+      return { user: null, error: error.message };
     }
 
-    if (!data.user) return null;
+    if (!data.user) {
+      return { user: null, error: 'Failed to create user' };
+    }
 
     // Crea profilo
     const profile = await profileService.upsertProfile({
@@ -73,13 +84,16 @@ class AuthService {
     // Crea statistiche iniziali
     await statsService.createStats(data.user.id);
 
-    return profile ? {
-      id: profile.id,
-      email: profile.email,
-      nickname: profile.nickname,
-      avatar_url: profile.avatar_url,
-      provider: profile.provider
-    } : null;
+    return {
+      user: profile ? {
+        id: profile.id,
+        email: profile.email,
+        nickname: profile.nickname,
+        avatar_url: profile.avatar_url,
+        provider: profile.provider
+      } : null,
+      error: null
+    };
   }
 
   // Sign in con Google (OAuth reale)

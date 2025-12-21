@@ -168,6 +168,8 @@ class RoomService {
 
   async getRoom(code: string): Promise<Room | null> {
     try {
+      console.log('getRoom called with code:', code);
+      
       // Carica stanza dal database
       const { data: roomData, error: roomError } = await supabase
         .from('rooms')
@@ -175,10 +177,35 @@ class RoomService {
         .eq('code', code.toUpperCase())
         .single();
 
-      if (roomError || !roomData) {
+      if (roomError) {
         console.error('Error fetching room:', roomError);
+        console.error('Error details:', {
+          code: roomError.code,
+          message: roomError.message,
+          details: roomError.details,
+          hint: roomError.hint
+        });
+        
+        // Se la tabella non esiste, fornisci un messaggio più chiaro
+        if (roomError.code === '42P01' || roomError.message?.includes('does not exist')) {
+          throw new Error('La tabella "rooms" non esiste. Esegui lo schema SQL in Supabase Dashboard → SQL Editor. Vedi il file supabase-rooms-schema.sql');
+        }
+        
+        // Se la stanza non esiste (PGRST116), è normale
+        if (roomError.code === 'PGRST116') {
+          console.log('Room not found (code does not exist)');
+          return null;
+        }
+        
         return null;
       }
+
+      if (!roomData) {
+        console.log('Room data is null');
+        return null;
+      }
+
+      console.log('Room data loaded:', roomData.id);
 
       // Carica membri
       const { data: membersData, error: membersError } = await supabase
@@ -188,7 +215,12 @@ class RoomService {
 
       if (membersError) {
         console.error('Error fetching room members:', membersError);
-        return null;
+        console.error('Error details:', {
+          code: membersError.code,
+          message: membersError.message
+        });
+        // Non ritornare null se c'è un errore nel caricare i membri, usa array vuoto
+        console.warn('Continuing with empty members array');
       }
 
       // Costruisci oggetto Room
@@ -208,9 +240,18 @@ class RoomService {
         createdAt: new Date(roomData.created_at).getTime()
       };
 
+      console.log('Room object built, members count:', room.members.length);
       return room;
     } catch (error) {
       console.error('Error in getRoom:', error);
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        // Rilancia l'errore se è un errore di tabella mancante
+        if (error.message.includes('non esiste')) {
+          throw error;
+        }
+      }
       return null;
     }
   }

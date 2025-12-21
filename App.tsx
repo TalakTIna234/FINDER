@@ -15,6 +15,7 @@ import { statsService } from './services/statsService';
 import { AvatarUpload } from './components/AvatarUpload';
 import { EmailInput } from './components/EmailInput';
 import { NicknameInput } from './components/NicknameInput';
+import { NicknameInput } from './components/NicknameInput';
 
 type Tab = 'home' | 'playlist' | 'profile';
 
@@ -403,12 +404,11 @@ const App: React.FC = () => {
                    {isSignUp && (
                      <div>
                        <label className="text-[9px] font-black opacity-40 uppercase tracking-widest block mb-2">Nickname</label>
-                       <input
-                         type="text"
+                       <NicknameInput
                          value={signupNickname}
-                         onChange={(e) => setSignupNickname(e.target.value)}
+                         onChange={setSignupNickname}
                          placeholder="Il tuo nickname"
-                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold focus:outline-none focus:border-blue-600/50 transition-colors"
+                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 font-bold focus:outline-none focus:border-blue-600/50 transition-colors text-white"
                        />
                      </div>
                    )}

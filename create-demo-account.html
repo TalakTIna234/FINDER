@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Demo Account - MovieMatch</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        button:active {
+            transform: translateY(0);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: none;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            border: 1px solid #ffeaa7;
+        }
+        .warning strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Create Demo Account</h1>
+        <p class="subtitle">Crea l'account demo per MovieMatch</p>
+        
+        <div class="warning">
+            <strong>⚠️ Nota Importante:</strong>
+            Questo script richiede le credenziali Supabase. Inserisci i valori dal file .env o dalle variabili d'ambiente di Vercel.
+        </div>
+        
+        <div class="input-group">
+            <label for="supabaseUrl">Supabase URL</label>
+            <input type="text" id="supabaseUrl" placeholder="https://xxxxx.supabase.co" value="https://ghkfvvuqkexupwqshrtt.supabase.co">
+        </div>
+        
+        <div class="input-group">
+            <label for="supabaseKey">Supabase Service Role Key</label>
+            <input type="password" id="supabaseKey" placeholder="Inserisci la Service Role Key (non l'anon key)">
+            <small style="color: #666; font-size: 12px; margin-top: 5px; display: block;">
+                La Service Role Key si trova in: Supabase Dashboard → Settings → API → service_role (secret)
+            </small>
+        </div>
+        
+        <button id="createBtn" onclick="createDemoAccount()">Crea Account Demo</button>
+        
+        <div id="status" class="status"></div>
+    </div>
+
+    <script>
+        async function createDemoAccount() {
+            const url = document.getElementById('supabaseUrl').value.trim();
+            const serviceRoleKey = document.getElementById('supabaseKey').value.trim();
+            const statusDiv = document.getElementById('status');
+            const createBtn = document.getElementById('createBtn');
+            
+            if (!url || !serviceRoleKey) {
+                statusDiv.className = 'status error';
+                statusDiv.textContent = 'Inserisci URL e Service Role Key';
+                return;
+            }
+            
+            createBtn.disabled = true;
+            createBtn.textContent = 'Creazione in corso...';
+            statusDiv.className = 'status info';
+            statusDiv.textContent = 'Creazione account in corso...';
+            
+            try {
+                // Crea client Supabase con service role key (ha privilegi admin)
+                const { createClient } = supabase;
+                const supabaseAdmin = createClient(url, serviceRoleKey, {
+                    auth: {
+                        autoRefreshToken: false,
+                        persistSession: false
+                    }
+                });
+                
+                // 1. Crea utente in auth.users
+                const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+                    email: 'demo@moviematch.app',
+                    password: 'demo',
+                    email_confirm: true, // Auto-conferma email
+                    user_metadata: {
+                        nickname: 'Demo User'
+                    }
+                });
+                
+                if (authError) {
+                    if (authError.message.includes('already registered')) {
+                        statusDiv.className = 'status info';
+                        statusDiv.textContent = 'Utente già esistente. Aggiorno il profilo...';
+                    } else {
+                        throw authError;
+                    }
+                }
+                
+                const userId = authData?.user?.id || (authError ? await getUserIdByEmail(supabaseAdmin, 'demo@moviematch.app') : null);
+                
+                if (!userId) {
+                    throw new Error('Impossibile ottenere l\'ID utente');
+                }
+                
+                // 2. Crea/aggiorna profilo in public.users
+                const { error: profileError } = await supabaseAdmin
+                    .from('users')
+                    .upsert({
+                        id: userId,
+                        email: 'demo@moviematch.app',
+                        nickname: 'Demo User',
+                        provider: 'email',
+                        updated_at: new Date().toISOString()
+                    }, {
+                        onConflict: 'id'
+                    });
+                
+                if (profileError) {
+                    throw profileError;
+                }
+                
+                // 3. Crea statistiche iniziali
+                const { error: statsError } = await supabaseAdmin
+                    .from('user_stats')
+                    .upsert({
+                        user_id: userId,
+                        movies_liked: 0,
+                        matches_found: 0,
+                        rooms_created: 0,
+                        rooms_joined: 0,
+                        updated_at: new Date().toISOString()
+                    }, {
+                        onConflict: 'user_id'
+                    });
+                
+                if (statsError && !statsError.message.includes('duplicate')) {
+                    console.warn('Stats error (non-critical):', statsError);
+                }
+                
+                statusDiv.className = 'status success';
+                statusDiv.textContent = '✅ Account demo creato con successo!\n\nEmail: demo@moviematch.app\nPassword: demo\n\nOra puoi testare il login nell\'app.';
+                createBtn.textContent = 'Account Creato!';
+                
+            } catch (error) {
+                console.error('Error:', error);
+                statusDiv.className = 'status error';
+                statusDiv.textContent = '❌ Errore: ' + (error.message || 'Errore sconosciuto') + '\n\nControlla la console per dettagli.';
+                createBtn.disabled = false;
+                createBtn.textContent = 'Riprova';
+            }
+        }
+        
+        async function getUserIdByEmail(supabaseAdmin, email) {
+            const { data, error } = await supabaseAdmin.auth.admin.listUsers();
+            if (error) throw error;
+            const user = data.users.find(u => u.email === email);
+            return user?.id || null;
+        }
+    </script>
+</body>
+</html>
+

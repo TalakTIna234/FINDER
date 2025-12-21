@@ -28,9 +28,33 @@ class RoomService {
 
   async createRoom(hostId: string, hostNickname: string, movies: Movie[]): Promise<Room | null> {
     try {
-      console.log('createRoom called:', { hostId, hostNickname, moviesCount: movies.length });
+      console.log('=== CREATE ROOM START ===');
+      console.log('Parameters:', { hostId, hostNickname, moviesCount: movies.length });
+      console.log('Timestamp:', new Date().toISOString());
+      
+      // Verifica che le tabelle esistano prima di procedere
+      console.log('Checking if rooms table exists...');
+      try {
+        const { error: testError } = await supabase
+          .from('rooms')
+          .select('id')
+          .limit(1);
+        
+        if (testError) {
+          if (testError.code === '42P01' || testError.message?.includes('does not exist')) {
+            throw new Error('La tabella "rooms" non esiste. Esegui lo schema SQL in Supabase Dashboard → SQL Editor. Vedi il file supabase-rooms-schema.sql');
+          }
+          console.warn('Warning checking rooms table:', testError);
+        } else {
+          console.log('✓ Rooms table exists');
+        }
+      } catch (tableCheckError) {
+        console.error('Table check failed:', tableCheckError);
+        throw tableCheckError;
+      }
       
       // Genera codice univoco
+      console.log('Generating unique room code...');
       let code = this.generateCode();
       let attempts = 0;
       
@@ -43,20 +67,20 @@ class RoomService {
             .eq('code', code)
             .maybeSingle();
           
-          // Se c'è un errore che non è "not found", potrebbe essere che la tabella non esiste
           if (checkError && checkError.code !== 'PGRST116') {
-            console.error('Error checking room code (table might not exist):', checkError);
-            throw new Error(`Tabella 'rooms' non trovata. Esegui lo schema SQL in Supabase: ${checkError.message}`);
+            console.error('Error checking code uniqueness:', checkError);
+            throw checkError;
           }
           
-          if (!existing) break; // Codice disponibile
+          if (!existing) {
+            console.log(`✓ Code ${code} is available (attempt ${attempts + 1})`);
+            break; // Codice disponibile
+          }
+          
+          console.log(`✗ Code ${code} already exists, generating new one...`);
           code = this.generateCode();
           attempts++;
         } catch (error) {
-          // Se la tabella non esiste, lancia un errore più chiaro
-          if (error instanceof Error && error.message.includes('Tabella')) {
-            throw error;
-          }
           console.error('Error in code check loop:', error);
           throw error;
         }
@@ -64,13 +88,22 @@ class RoomService {
       
       if (attempts >= 10) {
         console.error('Failed to generate unique room code after 10 attempts');
-        return null;
+        throw new Error('Impossibile generare un codice stanza univoco. Riprova.');
       }
 
-      console.log('Generated unique code:', code);
+      console.log('✓ Generated unique code:', code);
 
       // Crea stanza nel database
       console.log('Inserting room into database...');
+      console.log('Room data to insert:', {
+        code,
+        host_id: hostId,
+        host_nickname: hostNickname,
+        movies_count: movies.length,
+        status: 'lobby'
+      });
+      
+      const insertStartTime = Date.now();
       const { data: roomData, error: roomError } = await supabase
         .from('rooms')
         .insert({
@@ -82,28 +115,39 @@ class RoomService {
         })
         .select()
         .single();
+      
+      const insertTime = Date.now() - insertStartTime;
+      console.log(`Room insert completed in ${insertTime}ms`);
 
       if (roomError) {
-        console.error('Error creating room:', roomError);
-        console.error('Error details:', {
-          code: roomError.code,
-          message: roomError.message,
-          details: roomError.details,
-          hint: roomError.hint
-        });
+        console.error('=== ROOM INSERT ERROR ===');
+        console.error('Error code:', roomError.code);
+        console.error('Error message:', roomError.message);
+        console.error('Error details:', roomError.details);
+        console.error('Error hint:', roomError.hint);
         
         // Se la tabella non esiste, fornisci un messaggio più chiaro
         if (roomError.code === '42P01' || roomError.message?.includes('does not exist')) {
           throw new Error('La tabella "rooms" non esiste. Esegui lo schema SQL in Supabase Dashboard → SQL Editor. Vedi il file supabase-rooms-schema.sql');
         }
         
-        return null;
+        // Se è un errore di RLS policy
+        if (roomError.code === '42501' || roomError.message?.includes('permission denied') || roomError.message?.includes('policy')) {
+          throw new Error('Errore di permessi: verifica che le RLS policies per la tabella "rooms" siano configurate correttamente. Vedi supabase-rooms-schema.sql');
+        }
+        
+        throw new Error(`Errore nella creazione della stanza: ${roomError.message} (codice: ${roomError.code})`);
       }
 
-      console.log('Room created in database:', roomData.id);
+      if (!roomData) {
+        throw new Error('La stanza è stata creata ma non è stato possibile recuperare i dati. Riprova.');
+      }
+
+      console.log('✓ Room created in database:', roomData.id);
 
       // Aggiungi host come membro
       console.log('Adding host as member...');
+      const memberStartTime = Date.now();
       const { error: memberError } = await supabase
         .from('room_members')
         .insert({
@@ -113,16 +157,18 @@ class RoomService {
           is_host: true,
           status: 'ready'
         });
+      
+      const memberTime = Date.now() - memberStartTime;
+      console.log(`Member insert completed in ${memberTime}ms`);
 
       if (memberError) {
-        console.error('Error adding host to room:', memberError);
-        console.error('Error details:', {
-          code: memberError.code,
-          message: memberError.message,
-          details: memberError.details
-        });
+        console.error('=== MEMBER INSERT ERROR ===');
+        console.error('Error code:', memberError.code);
+        console.error('Error message:', memberError.message);
+        console.error('Error details:', memberError.details);
         
         // Elimina la stanza se non riusciamo ad aggiungere l'host
+        console.log('Cleaning up: deleting room due to member insert failure...');
         await supabase.from('rooms').delete().eq('id', roomData.id);
         
         // Se la tabella non esiste, fornisci un messaggio più chiaro
@@ -130,10 +176,15 @@ class RoomService {
           throw new Error('La tabella "room_members" non esiste. Esegui lo schema SQL in Supabase Dashboard → SQL Editor. Vedi il file supabase-rooms-schema.sql');
         }
         
-        return null;
+        // Se è un errore di RLS policy
+        if (memberError.code === '42501' || memberError.message?.includes('permission denied') || memberError.message?.includes('policy')) {
+          throw new Error('Errore di permessi: verifica che le RLS policies per la tabella "room_members" siano configurate correttamente. Vedi supabase-rooms-schema.sql');
+        }
+        
+        throw new Error(`Errore nell'aggiunta dell'host come membro: ${memberError.message} (codice: ${memberError.code})`);
       }
 
-      console.log('Host added as member successfully');
+      console.log('✓ Host added as member successfully');
 
       // Costruisci oggetto Room
       const room: Room = {
@@ -152,17 +203,26 @@ class RoomService {
         createdAt: new Date(roomData.created_at).getTime()
       };
 
+      console.log('=== CREATE ROOM SUCCESS ===');
       console.log('Room object created:', room.code);
+      console.log('Room summary:', {
+        id: room.id,
+        code: room.code,
+        membersCount: room.members.length,
+        moviesCount: room.movies.length
+      });
+      
       return room;
     } catch (error) {
-      console.error('Error in createRoom:', error);
+      console.error('=== CREATE ROOM ERROR ===');
+      console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error);
+      console.error('Error:', error);
       if (error instanceof Error) {
         console.error('Error message:', error.message);
         console.error('Error stack:', error.stack);
-        // Rilancia l'errore con messaggio più chiaro
-        throw error;
       }
-      return null;
+      // Rilancia l'errore con messaggio più chiaro
+      throw error;
     }
   }
 

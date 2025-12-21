@@ -15,7 +15,7 @@ import { statsService } from './services/statsService';
 import { AvatarUpload } from './components/AvatarUpload';
 import { EmailInput } from './components/EmailInput';
 import { NicknameInput } from './components/NicknameInput';
-import { NicknameInput } from './components/NicknameInput';
+import { supabase } from './services/supabaseClient';
 
 type Tab = 'home' | 'playlist' | 'profile';
 

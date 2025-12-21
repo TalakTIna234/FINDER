@@ -246,7 +246,6 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                 
                 console.log('Successfully joined room:', joinedRoom.code);
                 setRoom(joinedRoom);
-                setStep('lobby');
                 
                 // Incrementa statistiche (non bloccante)
                 try {
@@ -255,7 +254,14 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                   console.warn('Error incrementing stats (non-critical):', statsError);
                 }
                 
+                // Imposta loading a false PRIMA di cambiare step
                 setLoading(false);
+                
+                // Cambia step a lobby DOPO aver fermato il loading
+                console.log('Setting step to lobby after join...');
+                setTimeout(() => {
+                  setStep('lobby');
+                }, 100);
               } catch (error) {
                 console.error('Error in join room:', error);
                 console.error('Error details:', {

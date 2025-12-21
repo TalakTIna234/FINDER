@@ -14,6 +14,7 @@ import { playlistService } from './services/playlistService';
 import { statsService } from './services/statsService';
 import { AvatarUpload } from './components/AvatarUpload';
 import { EmailInput } from './components/EmailInput';
+import { NicknameInput } from './components/NicknameInput';
 
 type Tab = 'home' | 'playlist' | 'profile';
 

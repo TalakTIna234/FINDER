@@ -51,11 +51,27 @@ class AuthService {
 
   // Sign up con email
   async signUpWithEmail(email: string, password: string, nickname: string): Promise<{ user: AuthUser | null; error: string | null }> {
+    // Valida email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return { user: null, error: 'Email non valida' };
+    }
+
+    // Valida password (minimo 6 caratteri)
+    if (!password || password.length < 6) {
+      return { user: null, error: 'La password deve essere di almeno 6 caratteri' };
+    }
+
+    // Valida nickname
+    if (!nickname || nickname.length < 2) {
+      return { user: null, error: 'Il nickname deve essere di almeno 2 caratteri' };
+    }
+
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: email.trim().toLowerCase(),
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}`
+        emailRedirectTo: `${window.location.origin}/`
       }
     });
 

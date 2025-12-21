@@ -160,6 +160,30 @@ export const profileService = {
     }
 
     return data as UserProfile[];
+  },
+
+  // Verifica se un nickname è disponibile
+  async isNicknameAvailable(nickname: string): Promise<boolean> {
+    if (!nickname || nickname.length < 2) return false;
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('id')
+      .eq('nickname', nickname)
+      .limit(1)
+      .single();
+
+    if (error) {
+      // Se l'errore è "PGRST116" (nessun risultato), il nickname è disponibile
+      if (error.code === 'PGRST116') {
+        return true;
+      }
+      console.error('Error checking nickname availability:', error);
+      return false;
+    }
+
+    // Se c'è un risultato, il nickname è già in uso
+    return !data;
   }
 };
 

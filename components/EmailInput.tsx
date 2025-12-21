@@ -8,15 +8,16 @@ interface EmailInputProps {
 }
 
 // Domini email comuni con varianti
+// Nota: gmail.it, yahoo.it, hotmail.it, outlook.it, live.it, aol.it, msn.it NON ESISTONO
 const COMMON_DOMAINS = [
-  { pattern: /^g(m|mai|mail)?$/i, domains: ['gmail.com', 'gmail.it'] },
-  { pattern: /^y(ahoo)?$/i, domains: ['yahoo.com', 'yahoo.it'] },
-  { pattern: /^h(otmail)?$/i, domains: ['hotmail.com', 'hotmail.it'] },
-  { pattern: /^o(utlook)?$/i, domains: ['outlook.com', 'outlook.it'] },
-  { pattern: /^l(ive)?$/i, domains: ['live.com', 'live.it'] },
+  { pattern: /^g(m|mai|mail)?$/i, domains: ['gmail.com'] },
+  { pattern: /^y(ahoo)?$/i, domains: ['yahoo.com'] },
+  { pattern: /^h(otmail)?$/i, domains: ['hotmail.com'] },
+  { pattern: /^o(utlook)?$/i, domains: ['outlook.com'] },
+  { pattern: /^l(ive)?$/i, domains: ['live.com'] },
   { pattern: /^i(cloud)?$/i, domains: ['icloud.com'] },
-  { pattern: /^a(ol)?$/i, domains: ['aol.com', 'aol.it'] },
-  { pattern: /^m(sn)?$/i, domains: ['msn.com', 'msn.it'] },
+  { pattern: /^a(ol)?$/i, domains: ['aol.com'] },
+  { pattern: /^m(sn)?$/i, domains: ['msn.com'] },
   { pattern: /^p(rovider)?$/i, domains: ['provider.it'] },
   { pattern: /^t(iscali)?$/i, domains: ['tiscali.it'] },
   { pattern: /^v(irgilio)?$/i, domains: ['virgilio.it'] },

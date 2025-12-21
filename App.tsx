@@ -5,7 +5,7 @@ import { RoomView } from './views/RoomView';
 import { PlaylistView } from './views/PlaylistView';
 import { CardStack } from './components/CardStack';
 import { Movie } from './types';
-import { Home, Bookmark, User as UserIcon, Apple, Mail, Search, UserPlus, Check, X, Sparkles } from 'lucide-react';
+import { Home, Bookmark, User as UserIcon, Apple, Mail, Search, UserPlus, Check, X } from 'lucide-react';
 import { HapticButton } from './components/HapticButton';
 import { authService, AuthUser } from './services/authService';
 import { profileService, UserProfile } from './services/profileService';
@@ -378,42 +378,6 @@ const App: React.FC = () => {
                     className="w-full py-4 bg-white/10 border border-white/20 rounded-2xl font-black text-base flex items-center justify-center gap-3 active:scale-95 transition-all"
                    >
                       <Mail size={20} /> Accedi con Email
-                   </HapticButton>
-                   <HapticButton 
-                    onClick={async () => {
-                      setLoading(true);
-                      try {
-                        const user = await authService.signInWithEmail('demo@moviematch.app', 'demo');
-                        if (user) {
-                          setIsGuest(false);
-                          setNickname(user.nickname);
-                          setAvatarUrl(user.avatar_url || null);
-                          const profile = await profileService.getCurrentProfile();
-                          if (profile) {
-                            setBio(profile.bio || '');
-                          }
-                          const dbPlaylist = await playlistService.getPlaylist();
-                          if (dbPlaylist.length > 0) {
-                            setLikedMovies(dbPlaylist);
-                          }
-                          const stats = await statsService.getStats();
-                          if (stats) setUserStats(stats);
-                          setCurrentUserId(user.id);
-                          setActiveTab('home');
-                        } else {
-                          alert('Credenziali demo non valide. L\'account demo potrebbe non essere stato creato. Vedi DEMO-ACCOUNT-SETUP.md');
-                        }
-                      } catch (error) {
-                        console.error('Demo login error:', error);
-                        alert('Errore durante il login demo. Controlla la console.');
-                      } finally {
-                        setLoading(false);
-                      }
-                    }}
-                    disabled={loading}
-                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl font-black text-sm flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50 border border-purple-400/30"
-                   >
-                      <Sparkles size={16} /> Account Demo
                    </HapticButton>
                  </>
                ) : (

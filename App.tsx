@@ -63,11 +63,23 @@ const App: React.FC = () => {
         setLoading(true);
         
         try {
-          // Aspetta un attimo per permettere a Supabase di processare il token
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          // Aspetta che Supabase processi la sessione (aumentato a 2 secondi)
+          await new Promise(resolve => setTimeout(resolve, 2000));
           
-          // Carica dati utente
-          const user = await authService.getCurrentUser();
+          // Prova più volte a ottenere l'utente (retry logic)
+          let user = null;
+          let retries = 3;
+          while (!user && retries > 0) {
+            user = await authService.getCurrentUser();
+            if (!user) {
+              retries--;
+              if (retries > 0) {
+                console.log(`Retrying to get user... ${retries} attempts left`);
+                await new Promise(resolve => setTimeout(resolve, 1000));
+              }
+            }
+          }
+          
           if (user) {
             setIsGuest(false);
             setNickname(user.nickname);
@@ -99,11 +111,14 @@ const App: React.FC = () => {
             
             setActiveTab('home');
           } else {
-            console.error('Failed to get user after OAuth');
+            console.error('Failed to get user after OAuth - retries exhausted');
+            console.error('Access token present:', !!accessToken);
+            console.error('Current URL:', window.location.href);
             alert('Errore: impossibile eseguire l\'accesso. Verifica la console per dettagli.');
           }
         } catch (error) {
           console.error('Error in OAuth callback:', error);
+          console.error('Error details:', error instanceof Error ? error.stack : error);
           alert('Errore durante il login: ' + (error instanceof Error ? error.message : 'Errore sconosciuto'));
         } finally {
           setLoading(false);

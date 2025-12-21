@@ -39,24 +39,48 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
 
   const handleSelectGenre = async (genreId: number) => {
     setLoading(true);
-    const movies = await movieService.discoverByGenre(genreId);
-    setLoading(false);
-    
-    // Crea stanza usando roomService
-    const user = await authService.getCurrentUser();
-    if (!user) {
-      console.error('User not authenticated');
-      return;
+    try {
+      const movies = await movieService.discoverByGenre(genreId);
+      
+      if (!movies || movies.length === 0) {
+        alert('Nessun film trovato per questo genere. Riprova.');
+        setLoading(false);
+        return;
+      }
+      
+      // Crea stanza usando roomService
+      const user = await authService.getCurrentUser();
+      if (!user) {
+        console.error('User not authenticated');
+        alert('Devi essere autenticato per creare una stanza. Effettua il login.');
+        setLoading(false);
+        return;
+      }
+      
+      const newRoom = roomService.createRoom(user.id, user.nickname, movies);
+      if (!newRoom) {
+        alert('Errore nella creazione della stanza. Riprova.');
+        setLoading(false);
+        return;
+      }
+      
+      setRoomCode(newRoom.code);
+      setRoom(newRoom);
+      
+      // Incrementa statistiche
+      try {
+        await statsService.increment('rooms_created');
+      } catch (statsError) {
+        console.warn('Error incrementing stats:', statsError);
+      }
+      
+      setStep('lobby');
+    } catch (error) {
+      console.error('Error in handleSelectGenre:', error);
+      alert('Errore nel caricamento dei film. Riprova.');
+    } finally {
+      setLoading(false);
     }
-    
-    const newRoom = roomService.createRoom(user.id, user.nickname, movies);
-    setRoomCode(newRoom.code);
-    setRoom(newRoom);
-    
-    // Incrementa statistiche
-    await statsService.increment('rooms_created');
-    
-    setStep('lobby');
   };
 
   const startSession = () => {

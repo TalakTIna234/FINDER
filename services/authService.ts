@@ -132,8 +132,26 @@ class AuthService {
 
   // Ottieni utente corrente
   async getCurrentUser(): Promise<AuthUser | null> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+    // Prova prima con getSession (più affidabile dopo OAuth redirect)
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    if (sessionError) {
+      console.error('Error getting session:', sessionError);
+    }
+    
+    // Se abbiamo una sessione, usa quella, altrimenti prova getUser
+    const { data: { user }, error: userError } = session?.user 
+      ? { data: { user: session.user }, error: null }
+      : await supabase.auth.getUser();
+    
+    if (userError) {
+      console.error('Error getting user:', userError);
+    }
+    
+    if (!user) {
+      console.log('No user found in session or getUser');
+      return null;
+    }
 
     let profile = await profileService.getCurrentProfile();
     

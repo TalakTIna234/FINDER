@@ -16,13 +16,19 @@ export interface UserProfile {
 export const profileService = {
   // Ottieni profilo utente corrente
   async getCurrentProfile(): Promise<UserProfile | null> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
+    // Prova prima con getSession (più affidabile dopo OAuth redirect)
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
+    
+    // Se non c'è sessione, prova getUser
+    const finalUser = user || (await supabase.auth.getUser()).data.user;
+    
+    if (!finalUser) return null;
 
     const { data, error } = await supabase
       .from('users')
       .select('*')
-      .eq('id', user.id)
+      .eq('id', finalUser.id)
       .single();
 
     if (error) {

@@ -13,6 +13,10 @@ dist
 dist-ssr
 *.local
 
+# Keep package.json and package-lock.json
+!package.json
+!package-lock.json
+
 # Environment variables
 .env
 .env.local
@@ -32,9 +36,15 @@ dist-ssr
 AppData/
 *.parc
 *.blb
-*.json
 .DS_Store
 Thumbs.db
+
+# JSON files (but keep package.json and package-lock.json)
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
+!vercel.json
 
 # Capacitor
 .capacitor/

@@ -11,11 +11,10 @@ export default defineConfig(({ mode }) => {
       },
       plugins: [react()],
       define: {
+        // Solo per variabili non-VITE (GEMINI_API_KEY non inizia con VITE_)
         'process.env.API_KEY': JSON.stringify(env.GEMINI_API_KEY),
         'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-        'process.env.VITE_TMDB_ACCESS_TOKEN': JSON.stringify(env.VITE_TMDB_ACCESS_TOKEN),
-        'process.env.VITE_SUPABASE_URL': JSON.stringify(env.VITE_SUPABASE_URL),
-        'process.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(env.VITE_SUPABASE_ANON_KEY)
+        // Le variabili VITE_* sono automaticamente esposte da Vite, non serve definirle qui
       },
       resolve: {
         alias: {

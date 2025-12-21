@@ -30,10 +30,23 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
     });
     
     if (roomCode && step === 'lobby') {
-      const currentRoom = roomService.getRoom(roomCode);
-      if (currentRoom) {
-        setRoom(currentRoom);
-      }
+      // Carica stanza dal database
+      roomService.getRoom(roomCode).then(currentRoom => {
+        if (currentRoom) {
+          setRoom(currentRoom);
+        }
+      });
+
+      // Sottoscrivi agli aggiornamenti real-time
+      const unsubscribe = roomService.subscribeToRoom(roomCode, (updatedRoom) => {
+        if (updatedRoom) {
+          setRoom(updatedRoom);
+        }
+      });
+
+      return () => {
+        if (unsubscribe) unsubscribe();
+      };
     }
   }, [roomCode, step]);
 
@@ -57,7 +70,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         return;
       }
       
-      const newRoom = roomService.createRoom(user.id, user.nickname, movies);
+      const newRoom = await roomService.createRoom(user.id, user.nickname, movies);
       if (!newRoom) {
         alert('Errore nella creazione della stanza. Riprova.');
         setLoading(false);
@@ -83,11 +96,11 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
     }
   };
 
-  const startSession = () => {
+  const startSession = async () => {
     if (!roomCode) return;
-    const currentRoom = roomService.getRoom(roomCode);
+    const currentRoom = await roomService.getRoom(roomCode);
     if (currentRoom) {
-      roomService.startRoom(roomCode);
+      await roomService.startRoom(roomCode);
       onStartSession(currentRoom.movies);
     }
   };
@@ -171,13 +184,13 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                 return;
               }
               
-              const foundRoom = roomService.getRoom(roomCode);
+              const foundRoom = await roomService.getRoom(roomCode);
               if (!foundRoom) {
                 alert('Stanza non trovata. Controlla il codice.');
                 return;
               }
               
-              const joinedRoom = roomService.joinRoom(roomCode, user.id, user.nickname);
+              const joinedRoom = await roomService.joinRoom(roomCode, user.id, user.nickname);
               if (joinedRoom) {
                 setRoom(joinedRoom);
                 setStep('lobby');

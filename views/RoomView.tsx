@@ -59,64 +59,125 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
 
   const handleSelectGenre = async (genreId: number) => {
     setLoading(true);
+    
+    // Timeout di sicurezza - se passa più di 30 secondi, mostra errore
+    const timeoutId = setTimeout(() => {
+      console.error('Timeout: handleSelectGenre took more than 30 seconds');
+      alert('Il caricamento sta impiegando troppo tempo. Controlla la console per dettagli. Verifica che le tabelle rooms e room_members siano state create in Supabase.');
+      setLoading(false);
+    }, 30000);
+    
     try {
-      console.log('Starting genre selection:', genreId);
+      console.log('=== STARTING GENRE SELECTION ===');
+      console.log('Genre ID:', genreId);
+      console.log('Timestamp:', new Date().toISOString());
       
       // Carica film
-      console.log('Loading movies...');
+      console.log('[1/4] Loading movies from TMDB...');
+      const moviesStartTime = Date.now();
       const movies = await movieService.discoverByGenre(genreId);
-      console.log('Movies loaded:', movies?.length || 0);
+      const moviesLoadTime = Date.now() - moviesStartTime;
+      console.log(`[1/4] Movies loaded in ${moviesLoadTime}ms:`, movies?.length || 0);
       
       if (!movies || movies.length === 0) {
+        clearTimeout(timeoutId);
         alert('Nessun film trovato per questo genere. Riprova.');
         setLoading(false);
         return;
       }
       
       // Verifica autenticazione
-      console.log('Checking authentication...');
+      console.log('[2/4] Checking authentication...');
+      const authStartTime = Date.now();
       const user = await authService.getCurrentUser();
+      const authTime = Date.now() - authStartTime;
+      console.log(`[2/4] Auth check completed in ${authTime}ms`);
+      
       if (!user) {
+        clearTimeout(timeoutId);
         console.error('User not authenticated');
         alert('Devi essere autenticato per creare una stanza. Effettua il login.');
         setLoading(false);
         return;
       }
-      console.log('User authenticated:', user.id);
+      console.log('User authenticated:', user.id, user.nickname);
       
       // Crea stanza
-      console.log('Creating room...');
-      const newRoom = await roomService.createRoom(user.id, user.nickname, movies);
+      console.log('[3/4] Creating room in Supabase...');
+      console.log('Room data:', {
+        hostId: user.id,
+        hostNickname: user.nickname,
+        moviesCount: movies.length
+      });
+      const roomStartTime = Date.now();
       
-      if (!newRoom) {
-        console.error('Failed to create room');
-        alert('Errore nella creazione della stanza. Verifica che le tabelle rooms e room_members siano state create in Supabase. Controlla la console per dettagli.');
+      let newRoom: Room | null = null;
+      try {
+        newRoom = await roomService.createRoom(user.id, user.nickname, movies);
+      } catch (roomError) {
+        clearTimeout(timeoutId);
+        console.error('Exception in createRoom:', roomError);
+        const errorMessage = roomError instanceof Error ? roomError.message : 'Errore sconosciuto';
+        console.error('Full error:', errorMessage);
+        alert(`Errore nella creazione della stanza: ${errorMessage}\n\nVerifica che:\n1. Le tabelle rooms e room_members siano state create in Supabase\n2. Hai eseguito lo schema SQL (supabase-rooms-schema.sql)\n3. Controlla la console per dettagli.`);
         setLoading(false);
         return;
       }
       
-      console.log('Room created successfully:', newRoom.code);
+      const roomTime = Date.now() - roomStartTime;
+      console.log(`[3/4] Room creation completed in ${roomTime}ms`);
+      
+      if (!newRoom) {
+        clearTimeout(timeoutId);
+        console.error('createRoom returned null');
+        alert('Errore nella creazione della stanza. La funzione ha restituito null. Verifica che le tabelle rooms e room_members siano state create in Supabase. Controlla la console per dettagli.');
+        setLoading(false);
+        return;
+      }
+      
+      console.log('[4/4] Room created successfully:', newRoom.code);
+      console.log('Room details:', {
+        id: newRoom.id,
+        code: newRoom.code,
+        membersCount: newRoom.members.length,
+        moviesCount: newRoom.movies.length
+      });
+      
+      // Imposta stato
       setRoomCode(newRoom.code);
       setRoom(newRoom);
       
       // Incrementa statistiche (non bloccante)
       try {
         await statsService.increment('rooms_created');
+        console.log('Stats incremented');
       } catch (statsError) {
         console.warn('Error incrementing stats (non-critical):', statsError);
       }
       
+      clearTimeout(timeoutId);
+      
       // Imposta step a lobby DOPO aver impostato roomCode e room
       console.log('Setting step to lobby...');
       setLoading(false);
+      
+      // Piccolo delay per assicurare che il loading state sia aggiornato
+      await new Promise(resolve => setTimeout(resolve, 100));
       setStep('lobby');
+      
+      console.log('=== GENRE SELECTION COMPLETED SUCCESSFULLY ===');
     } catch (error) {
-      console.error('Error in handleSelectGenre:', error);
+      clearTimeout(timeoutId);
+      console.error('=== ERROR IN HANDLE SELECT GENRE ===');
+      console.error('Error:', error);
       console.error('Error details:', {
         message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : undefined
       });
-      alert('Errore nel caricamento dei film: ' + (error instanceof Error ? error.message : 'Errore sconosciuto') + '. Controlla la console per dettagli.');
+      
+      const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';
+      alert(`Errore nel caricamento dei film: ${errorMessage}\n\nControlla la console per dettagli. Verifica che le tabelle rooms e room_members siano state create in Supabase.`);
       setLoading(false);
     }
   };

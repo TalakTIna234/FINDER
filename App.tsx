@@ -414,12 +414,11 @@ const App: React.FC = () => {
                    
                    <div>
                      <label className="text-[9px] font-black opacity-40 uppercase tracking-widest block mb-2">Email</label>
-                     <input
-                       type="email"
+                     <EmailInput
                        value={email}
-                       onChange={(e) => setEmail(e.target.value)}
+                       onChange={setEmail}
                        placeholder="tua@email.com"
-                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold focus:outline-none focus:border-blue-600/50 transition-colors"
+                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold focus:outline-none focus:border-blue-600/50 transition-colors text-white"
                      />
                    </div>
                    
@@ -451,11 +450,43 @@ const App: React.FC = () => {
                          let user: AuthUser | null = null;
                          
                          if (isSignUp) {
-                           user = await authService.signUpWithEmail(email, password, signupNickname);
-                           if (user) {
-                             alert('Registrazione completata! Controlla la tua email per confermare l\'account.');
+                           const result = await authService.signUpWithEmail(email, password, signupNickname);
+                           
+                           if (result.error === 'EMAIL_EXISTS') {
+                             // Email già registrata - suggerisci login
+                             const useLogin = confirm(
+                               'Questa email è già registrata. Vuoi accedere invece? Clicca OK per accedere o Annulla per provare con un\'altra email.'
+                             );
+                             
+                             if (useLogin) {
+                               // Passa alla modalità login
+                               setIsSignUp(false);
+                               setLoading(false);
+                               return;
+                             } else {
+                               setLoading(false);
+                               return;
+                             }
+                           }
+                           
+                           if (result.error) {
+                             alert('Errore durante la registrazione: ' + result.error);
+                             setLoading(false);
+                             return;
+                           }
+                           
+                           if (result.user) {
+                             alert('Registrazione completata! Controlla la tua email per confermare l\'account. Dopo la conferma potrai accedere.');
+                             // Non fare login automatico - l'utente deve confermare l'email
+                             setLoading(false);
+                             setShowEmailAuth(false);
+                             setEmail('');
+                             setPassword('');
+                             setSignupNickname('');
+                             setIsSignUp(false);
+                             return;
                            } else {
-                             alert('Errore durante la registrazione. Verifica che l\'email non sia già registrata.');
+                             alert('Errore durante la registrazione. Riprova.');
                              setLoading(false);
                              return;
                            }

@@ -106,8 +106,10 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         console.warn('Error incrementing stats (non-critical):', statsError);
       }
       
-      setStep('lobby');
+      // Imposta step a lobby DOPO aver impostato roomCode e room
+      console.log('Setting step to lobby...');
       setLoading(false);
+      setStep('lobby');
     } catch (error) {
       console.error('Error in handleSelectGenre:', error);
       console.error('Error details:', {

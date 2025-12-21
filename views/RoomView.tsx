@@ -38,9 +38,16 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       });
 
       // Sottoscrivi agli aggiornamenti real-time
-      const unsubscribe = roomService.subscribeToRoom(roomCode, (updatedRoom) => {
-        if (updatedRoom) {
-          setRoom(updatedRoom);
+      let unsubscribe: (() => void) | null = null;
+      
+      // Carica stanza e poi sottoscrivi
+      roomService.getRoom(roomCode).then(room => {
+        if (room) {
+          unsubscribe = roomService.subscribeToRoom(roomCode, (updatedRoom) => {
+            if (updatedRoom) {
+              setRoom(updatedRoom);
+            }
+          });
         }
       });
 

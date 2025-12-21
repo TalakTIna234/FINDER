@@ -244,41 +244,52 @@ class RoomService {
 
   // Sottoscrizione real-time per aggiornamenti stanza
   subscribeToRoom(code: string, callback: (room: Room | null) => void) {
-    // Prima carica la stanza
-    this.getRoom(code).then(callback);
+    let roomId: string | null = null;
+    
+    // Prima carica la stanza per ottenere l'ID
+    this.getRoom(code).then(room => {
+      if (room) {
+        roomId = room.id;
+        callback(room);
+        
+        // Poi sottoscrivi agli aggiornamenti
+        const roomChannel = supabase
+          .channel(`room:${code}`)
+          .on('postgres_changes', 
+            { 
+              event: '*', 
+              schema: 'public', 
+              table: 'rooms',
+              filter: `code=eq.${code}`
+            },
+            () => {
+              // Ricarica stanza quando cambia
+              this.getRoom(code).then(callback);
+            }
+          )
+          .on('postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'room_members',
+              filter: `room_id=eq.${roomId}`
+            },
+            () => {
+              // Ricarica stanza quando cambiano i membri
+              this.getRoom(code).then(callback);
+            }
+          )
+          .subscribe();
 
-    // Poi sottoscrivi agli aggiornamenti
-    const roomChannel = supabase
-      .channel(`room:${code}`)
-      .on('postgres_changes', 
-        { 
-          event: '*', 
-          schema: 'public', 
-          table: 'rooms',
-          filter: `code=eq.${code}`
-        },
-        () => {
-          // Ricarica stanza quando cambia
-          this.getRoom(code).then(callback);
-        }
-      )
-      .on('postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'room_members',
-          filter: `room_id=eq.${code}`
-        },
-        () => {
-          // Ricarica stanza quando cambiano i membri
-          this.getRoom(code).then(callback);
-        }
-      )
-      .subscribe();
+        // Ritorna funzione di cleanup
+        return () => {
+          supabase.removeChannel(roomChannel);
+        };
+      }
+    });
 
-    return () => {
-      supabase.removeChannel(roomChannel);
-    };
+    // Ritorna funzione di cleanup vuota se la stanza non esiste ancora
+    return () => {};
   }
 }
 

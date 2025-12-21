@@ -28,29 +28,49 @@ class RoomService {
 
   async createRoom(hostId: string, hostNickname: string, movies: Movie[]): Promise<Room | null> {
     try {
+      console.log('createRoom called:', { hostId, hostNickname, moviesCount: movies.length });
+      
       // Genera codice univoco
       let code = this.generateCode();
       let attempts = 0;
       
       // Verifica che il codice sia unico (max 10 tentativi)
       while (attempts < 10) {
-        const { data: existing } = await supabase
-          .from('rooms')
-          .select('code')
-          .eq('code', code)
-          .single();
-        
-        if (!existing) break; // Codice disponibile
-        code = this.generateCode();
-        attempts++;
+        try {
+          const { data: existing, error: checkError } = await supabase
+            .from('rooms')
+            .select('code')
+            .eq('code', code)
+            .maybeSingle();
+          
+          // Se c'è un errore che non è "not found", potrebbe essere che la tabella non esiste
+          if (checkError && checkError.code !== 'PGRST116') {
+            console.error('Error checking room code (table might not exist):', checkError);
+            throw new Error(`Tabella 'rooms' non trovata. Esegui lo schema SQL in Supabase: ${checkError.message}`);
+          }
+          
+          if (!existing) break; // Codice disponibile
+          code = this.generateCode();
+          attempts++;
+        } catch (error) {
+          // Se la tabella non esiste, lancia un errore più chiaro
+          if (error instanceof Error && error.message.includes('Tabella')) {
+            throw error;
+          }
+          console.error('Error in code check loop:', error);
+          throw error;
+        }
       }
       
       if (attempts >= 10) {
-        console.error('Failed to generate unique room code');
+        console.error('Failed to generate unique room code after 10 attempts');
         return null;
       }
 
+      console.log('Generated unique code:', code);
+
       // Crea stanza nel database
+      console.log('Inserting room into database...');
       const { data: roomData, error: roomError } = await supabase
         .from('rooms')
         .insert({
@@ -65,10 +85,25 @@ class RoomService {
 
       if (roomError) {
         console.error('Error creating room:', roomError);
+        console.error('Error details:', {
+          code: roomError.code,
+          message: roomError.message,
+          details: roomError.details,
+          hint: roomError.hint
+        });
+        
+        // Se la tabella non esiste, fornisci un messaggio più chiaro
+        if (roomError.code === '42P01' || roomError.message?.includes('does not exist')) {
+          throw new Error('La tabella "rooms" non esiste. Esegui lo schema SQL in Supabase Dashboard → SQL Editor. Vedi il file supabase-rooms-schema.sql');
+        }
+        
         return null;
       }
 
+      console.log('Room created in database:', roomData.id);
+
       // Aggiungi host come membro
+      console.log('Adding host as member...');
       const { error: memberError } = await supabase
         .from('room_members')
         .insert({
@@ -81,10 +116,24 @@ class RoomService {
 
       if (memberError) {
         console.error('Error adding host to room:', memberError);
+        console.error('Error details:', {
+          code: memberError.code,
+          message: memberError.message,
+          details: memberError.details
+        });
+        
         // Elimina la stanza se non riusciamo ad aggiungere l'host
         await supabase.from('rooms').delete().eq('id', roomData.id);
+        
+        // Se la tabella non esiste, fornisci un messaggio più chiaro
+        if (memberError.code === '42P01' || memberError.message?.includes('does not exist')) {
+          throw new Error('La tabella "room_members" non esiste. Esegui lo schema SQL in Supabase Dashboard → SQL Editor. Vedi il file supabase-rooms-schema.sql');
+        }
+        
         return null;
       }
+
+      console.log('Host added as member successfully');
 
       // Costruisci oggetto Room
       const room: Room = {
@@ -103,9 +152,16 @@ class RoomService {
         createdAt: new Date(roomData.created_at).getTime()
       };
 
+      console.log('Room object created:', room.code);
       return room;
     } catch (error) {
       console.error('Error in createRoom:', error);
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        // Rilancia l'errore con messaggio più chiaro
+        throw error;
+      }
       return null;
     }
   }

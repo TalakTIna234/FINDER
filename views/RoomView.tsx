@@ -60,7 +60,12 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
   const handleSelectGenre = async (genreId: number) => {
     setLoading(true);
     try {
+      console.log('Starting genre selection:', genreId);
+      
+      // Carica film
+      console.log('Loading movies...');
       const movies = await movieService.discoverByGenre(genreId);
+      console.log('Movies loaded:', movies?.length || 0);
       
       if (!movies || movies.length === 0) {
         alert('Nessun film trovato per questo genere. Riprova.');
@@ -68,7 +73,8 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         return;
       }
       
-      // Crea stanza usando roomService
+      // Verifica autenticazione
+      console.log('Checking authentication...');
       const user = await authService.getCurrentUser();
       if (!user) {
         console.error('User not authenticated');
@@ -76,29 +82,39 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         setLoading(false);
         return;
       }
+      console.log('User authenticated:', user.id);
       
+      // Crea stanza
+      console.log('Creating room...');
       const newRoom = await roomService.createRoom(user.id, user.nickname, movies);
+      
       if (!newRoom) {
-        alert('Errore nella creazione della stanza. Riprova.');
+        console.error('Failed to create room');
+        alert('Errore nella creazione della stanza. Verifica che le tabelle rooms e room_members siano state create in Supabase. Controlla la console per dettagli.');
         setLoading(false);
         return;
       }
       
+      console.log('Room created successfully:', newRoom.code);
       setRoomCode(newRoom.code);
       setRoom(newRoom);
       
-      // Incrementa statistiche
+      // Incrementa statistiche (non bloccante)
       try {
         await statsService.increment('rooms_created');
       } catch (statsError) {
-        console.warn('Error incrementing stats:', statsError);
+        console.warn('Error incrementing stats (non-critical):', statsError);
       }
       
       setStep('lobby');
+      setLoading(false);
     } catch (error) {
       console.error('Error in handleSelectGenre:', error);
-      alert('Errore nel caricamento dei film. Riprova.');
-    } finally {
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      });
+      alert('Errore nel caricamento dei film: ' + (error instanceof Error ? error.message : 'Errore sconosciuto') + '. Controlla la console per dettagli.');
       setLoading(false);
     }
   };

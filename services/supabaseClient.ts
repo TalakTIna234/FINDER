@@ -11,7 +11,17 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   console.error('Supabase credentials missing!');
 }
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Configurazione per gestire meglio i cookie su desktop
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce', // Usa PKCE per sicurezza migliore
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    storageKey: 'sb-auth-token',
+  },
+});
 
 // Tipi per il database
 export interface Database {

@@ -201,33 +201,73 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
           
           <HapticButton
             onClick={async () => {
-              const user = await authService.getCurrentUser();
-              if (!user) {
-                alert('Devi essere autenticato per entrare in una stanza');
+              if (roomCode.length !== 6) {
+                alert('Il codice deve essere di 6 caratteri');
                 return;
               }
               
-              const foundRoom = await roomService.getRoom(roomCode);
-              if (!foundRoom) {
-                alert('Stanza non trovata. Controlla il codice.');
-                return;
-              }
-              
-              const joinedRoom = await roomService.joinRoom(roomCode, user.id, user.nickname);
-              if (joinedRoom) {
+              setLoading(true);
+              try {
+                console.log('Joining room with code:', roomCode);
+                
+                // Verifica autenticazione
+                console.log('Checking authentication...');
+                const user = await authService.getCurrentUser();
+                if (!user) {
+                  console.error('User not authenticated');
+                  alert('Devi essere autenticato per entrare in una stanza. Effettua il login.');
+                  setLoading(false);
+                  return;
+                }
+                console.log('User authenticated:', user.id);
+                
+                // Verifica che la stanza esista
+                console.log('Checking if room exists...');
+                const foundRoom = await roomService.getRoom(roomCode);
+                if (!foundRoom) {
+                  console.error('Room not found:', roomCode);
+                  alert('Stanza non trovata. Controlla il codice e assicurati che la stanza sia stata creata.');
+                  setLoading(false);
+                  return;
+                }
+                console.log('Room found:', foundRoom.code);
+                
+                // Unisciti alla stanza
+                console.log('Joining room...');
+                const joinedRoom = await roomService.joinRoom(roomCode, user.id, user.nickname);
+                if (!joinedRoom) {
+                  console.error('Failed to join room');
+                  alert('Errore nell\'entrare nella stanza. Controlla la console per dettagli.');
+                  setLoading(false);
+                  return;
+                }
+                
+                console.log('Successfully joined room:', joinedRoom.code);
                 setRoom(joinedRoom);
                 setStep('lobby');
                 
-                // Incrementa statistiche
-                await statsService.increment('rooms_joined');
-              } else {
-                alert('Errore nell\'entrare nella stanza');
+                // Incrementa statistiche (non bloccante)
+                try {
+                  await statsService.increment('rooms_joined');
+                } catch (statsError) {
+                  console.warn('Error incrementing stats (non-critical):', statsError);
+                }
+                
+                setLoading(false);
+              } catch (error) {
+                console.error('Error in join room:', error);
+                console.error('Error details:', {
+                  message: error instanceof Error ? error.message : 'Unknown error',
+                  stack: error instanceof Error ? error.stack : undefined
+                });
+                alert('Errore nell\'entrare nella stanza: ' + (error instanceof Error ? error.message : 'Errore sconosciuto') + '. Controlla la console per dettagli.');
+                setLoading(false);
               }
             }}
-            disabled={roomCode.length !== 6}
+            disabled={roomCode.length !== 6 || loading}
             className="w-full py-6 bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 text-white rounded-[32px] font-black text-xl italic uppercase tracking-widest shadow-2xl shadow-blue-600/30 active:scale-[0.96] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            Entra in Stanza
+            {loading ? 'Caricamento...' : 'Entra in Stanza'}
           </HapticButton>
         </div>
       )}

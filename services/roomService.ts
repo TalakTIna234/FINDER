@@ -217,20 +217,27 @@ class RoomService {
 
   async joinRoom(code: string, userId: string, nickname: string): Promise<Room | null> {
     try {
+      console.log('joinRoom called:', { code, userId, nickname });
+      
       // Carica stanza
+      console.log('Loading room...');
       const room = await this.getRoom(code);
       if (!room) {
-        console.error('Room not found');
+        console.error('Room not found for code:', code);
         return null;
       }
+      console.log('Room loaded:', room.id);
 
       // Verifica se l'utente è già membro
-      if (room.members.find(m => m.id === userId)) {
+      const existingMember = room.members.find(m => m.id === userId);
+      if (existingMember) {
+        console.log('User already a member of this room');
         return room; // Già membro
       }
 
       // Aggiungi nuovo membro
-      const { error: memberError } = await supabase
+      console.log('Adding user as member...');
+      const { data: memberData, error: memberError } = await supabase
         .from('room_members')
         .insert({
           room_id: room.id,
@@ -238,17 +245,53 @@ class RoomService {
           nickname,
           is_host: false,
           status: 'ready'
-        });
+        })
+        .select()
+        .single();
 
       if (memberError) {
         console.error('Error joining room:', memberError);
+        console.error('Error details:', {
+          code: memberError.code,
+          message: memberError.message,
+          details: memberError.details,
+          hint: memberError.hint
+        });
+        
+        // Se la tabella non esiste, fornisci un messaggio più chiaro
+        if (memberError.code === '42P01' || memberError.message?.includes('does not exist')) {
+          throw new Error('La tabella "room_members" non esiste. Esegui lo schema SQL in Supabase Dashboard → SQL Editor. Vedi il file supabase-rooms-schema.sql');
+        }
+        
+        // Se è un errore di constraint (utente già membro), ricarica la stanza
+        if (memberError.code === '23505') {
+          console.log('User already member (constraint violation), reloading room...');
+          return await this.getRoom(code);
+        }
+        
         return null;
       }
 
+      console.log('User added as member successfully:', memberData.id);
+
       // Ricarica stanza con nuovo membro
-      return await this.getRoom(code);
+      console.log('Reloading room with new member...');
+      const updatedRoom = await this.getRoom(code);
+      if (!updatedRoom) {
+        console.error('Failed to reload room after joining');
+        return null;
+      }
+      
+      console.log('Room reloaded successfully, members count:', updatedRoom.members.length);
+      return updatedRoom;
     } catch (error) {
       console.error('Error in joinRoom:', error);
+      if (error instanceof Error) {
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        // Rilancia l'errore con messaggio più chiaro
+        throw error;
+      }
       return null;
     }
   }

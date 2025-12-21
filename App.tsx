@@ -447,6 +447,22 @@ const App: React.FC = () => {
                        }
                        
                        setLoading(true);
+                       
+                       // Verifica disponibilità nickname prima di registrare
+                       if (isSignUp && signupNickname.length >= 2) {
+                         try {
+                           const nicknameAvailable = await profileService.isNicknameAvailable(signupNickname);
+                           if (!nicknameAvailable) {
+                             alert('Questo nickname è già in uso. Scegli un altro nickname.');
+                             setLoading(false);
+                             return;
+                           }
+                         } catch (error) {
+                           console.error('Error checking nickname:', error);
+                           // Continua comunque, il controllo verrà fatto anche lato server
+                         }
+                       }
+                       
                        try {
                          let user: AuthUser | null = null;
                          

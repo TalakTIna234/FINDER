@@ -510,9 +510,17 @@ const App: React.FC = () => {
                              return;
                            }
                          } else {
-                           user = await authService.signInWithEmail(email, password);
-                           if (!user) {
-                             alert('Credenziali non valide. Riprova.');
+                           try {
+                             user = await authService.signInWithEmail(email, password);
+                             if (!user) {
+                               alert('Credenziali non valide. Riprova o verifica di aver confermato l\'email se ti sei appena registrato.');
+                               setLoading(false);
+                               return;
+                             }
+                           } catch (error) {
+                             // Gestisci errori specifici (es: email non confermata)
+                             const errorMessage = error instanceof Error ? error.message : 'Errore durante il login';
+                             alert(errorMessage);
                              setLoading(false);
                              return;
                            }

@@ -34,6 +34,13 @@ const App: React.FC = () => {
   const [userStats, setUserStats] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  
+  // Email/Password auth states
+  const [showEmailAuth, setShowEmailAuth] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [signupNickname, setSignupNickname] = useState('');
 
   useEffect(() => {
     // Gestisci callback OAuth (Supabase può usare hash o query params)

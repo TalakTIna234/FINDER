@@ -358,18 +358,198 @@ const App: React.FC = () => {
           {isGuest ? (
             <div className="space-y-4 mb-8">
                <p className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] text-center mb-2">Registrati per sbloccare tutto</p>
-               <HapticButton 
-                onClick={() => handleSocialLogin('apple')}
-                className="w-full py-4 bg-white text-black rounded-2xl font-black text-base flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl"
-               >
-                  <Apple fill="currentColor" size={20} /> Accedi con Apple
-               </HapticButton>
-               <HapticButton 
-                onClick={() => handleSocialLogin('google')}
-                className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl font-black text-base flex items-center justify-center gap-3 active:scale-95 transition-all"
-               >
-                  <Mail size={20} /> Accedi con Google
-               </HapticButton>
+               
+               {!showEmailAuth ? (
+                 <>
+                   <HapticButton 
+                    onClick={() => handleSocialLogin('apple')}
+                    className="w-full py-4 bg-white text-black rounded-2xl font-black text-base flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl"
+                   >
+                      <Apple fill="currentColor" size={20} /> Accedi con Apple
+                   </HapticButton>
+                   <HapticButton 
+                    onClick={() => handleSocialLogin('google')}
+                    className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl font-black text-base flex items-center justify-center gap-3 active:scale-95 transition-all"
+                   >
+                      <Mail size={20} /> Accedi con Google
+                   </HapticButton>
+                   <HapticButton 
+                    onClick={() => setShowEmailAuth(true)}
+                    className="w-full py-4 bg-white/10 border border-white/20 rounded-2xl font-black text-base flex items-center justify-center gap-3 active:scale-95 transition-all"
+                   >
+                      <Mail size={20} /> Accedi con Email
+                   </HapticButton>
+                   <HapticButton 
+                    onClick={async () => {
+                      setLoading(true);
+                      try {
+                        const user = await authService.signInWithEmail('demo@moviematch.app', 'demo');
+                        if (user) {
+                          setIsGuest(false);
+                          setNickname(user.nickname);
+                          setAvatarUrl(user.avatar_url || null);
+                          const profile = await profileService.getCurrentProfile();
+                          if (profile) {
+                            setBio(profile.bio || '');
+                          }
+                          const dbPlaylist = await playlistService.getPlaylist();
+                          if (dbPlaylist.length > 0) {
+                            setLikedMovies(dbPlaylist);
+                          }
+                          const stats = await statsService.getStats();
+                          if (stats) setUserStats(stats);
+                          setCurrentUserId(user.id);
+                          setActiveTab('home');
+                        } else {
+                          alert('Credenziali demo non valide. L\'account demo potrebbe non essere stato creato. Vedi DEMO-ACCOUNT-SETUP.md');
+                        }
+                      } catch (error) {
+                        console.error('Demo login error:', error);
+                        alert('Errore durante il login demo. Controlla la console.');
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    disabled={loading}
+                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl font-black text-sm flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50 border border-purple-400/30"
+                   >
+                      <Sparkles size={16} /> Account Demo
+                   </HapticButton>
+                 </>
+               ) : (
+                 <div className="space-y-4">
+                   <div className="flex items-center justify-between mb-4">
+                     <h3 className="text-sm font-black uppercase">{isSignUp ? 'Registrati' : 'Accedi'}</h3>
+                     <button 
+                       onClick={() => {
+                         setShowEmailAuth(false);
+                         setEmail('');
+                         setPassword('');
+                         setSignupNickname('');
+                         setIsSignUp(false);
+                       }}
+                       className="text-[10px] font-black opacity-40 hover:opacity-100 transition-opacity"
+                     >
+                       Indietro
+                     </button>
+                   </div>
+                   
+                   {isSignUp && (
+                     <div>
+                       <label className="text-[9px] font-black opacity-40 uppercase tracking-widest block mb-2">Nickname</label>
+                       <input
+                         type="text"
+                         value={signupNickname}
+                         onChange={(e) => setSignupNickname(e.target.value)}
+                         placeholder="Il tuo nickname"
+                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold focus:outline-none focus:border-blue-600/50 transition-colors"
+                       />
+                     </div>
+                   )}
+                   
+                   <div>
+                     <label className="text-[9px] font-black opacity-40 uppercase tracking-widest block mb-2">Email</label>
+                     <input
+                       type="email"
+                       value={email}
+                       onChange={(e) => setEmail(e.target.value)}
+                       placeholder="tua@email.com"
+                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold focus:outline-none focus:border-blue-600/50 transition-colors"
+                     />
+                   </div>
+                   
+                   <div>
+                     <label className="text-[9px] font-black opacity-40 uppercase tracking-widest block mb-2">Password</label>
+                     <input
+                       type="password"
+                       value={password}
+                       onChange={(e) => setPassword(e.target.value)}
+                       placeholder="••••••••"
+                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold focus:outline-none focus:border-blue-600/50 transition-colors"
+                     />
+                   </div>
+                   
+                   <HapticButton
+                     onClick={async () => {
+                       if (!email || !password) {
+                         alert('Inserisci email e password');
+                         return;
+                       }
+                       
+                       if (isSignUp && !signupNickname) {
+                         alert('Inserisci un nickname');
+                         return;
+                       }
+                       
+                       setLoading(true);
+                       try {
+                         let user: AuthUser | null = null;
+                         
+                         if (isSignUp) {
+                           user = await authService.signUpWithEmail(email, password, signupNickname);
+                           if (user) {
+                             alert('Registrazione completata! Controlla la tua email per confermare l\'account.');
+                           } else {
+                             alert('Errore durante la registrazione. Verifica che l\'email non sia già registrata.');
+                             setLoading(false);
+                             return;
+                           }
+                         } else {
+                           user = await authService.signInWithEmail(email, password);
+                           if (!user) {
+                             alert('Credenziali non valide. Riprova.');
+                             setLoading(false);
+                             return;
+                           }
+                         }
+                         
+                         if (user) {
+                           setIsGuest(false);
+                           setNickname(user.nickname);
+                           setAvatarUrl(user.avatar_url || null);
+                           
+                           const profile = await profileService.getCurrentProfile();
+                           if (profile) {
+                             setBio(profile.bio || '');
+                           }
+                           
+                           const dbPlaylist = await playlistService.getPlaylist();
+                           if (dbPlaylist.length > 0) {
+                             setLikedMovies(dbPlaylist);
+                           }
+                           
+                           const stats = await statsService.getStats();
+                           if (stats) setUserStats(stats);
+                           
+                           setCurrentUserId(user.id);
+                           setShowEmailAuth(false);
+                           setEmail('');
+                           setPassword('');
+                           setSignupNickname('');
+                           setIsSignUp(false);
+                           setActiveTab('home');
+                         }
+                       } catch (error) {
+                         console.error('Email auth error:', error);
+                         alert('Errore: ' + (error instanceof Error ? error.message : 'Errore sconosciuto'));
+                       } finally {
+                         setLoading(false);
+                       }
+                     }}
+                     disabled={loading || !email || !password || (isSignUp && !signupNickname)}
+                     className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl font-black text-sm flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                   >
+                     {loading ? 'Caricamento...' : (isSignUp ? 'Registrati' : 'Accedi')}
+                   </HapticButton>
+                   
+                   <button
+                     onClick={() => setIsSignUp(!isSignUp)}
+                     className="w-full text-center text-[10px] font-black opacity-40 hover:opacity-100 transition-opacity"
+                   >
+                     {isSignUp ? 'Hai già un account? Accedi' : 'Non hai un account? Registrati'}
+                   </button>
+                 </div>
+               )}
             </div>
           ) : (
             <div className="space-y-6 mb-8">

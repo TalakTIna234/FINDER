@@ -168,21 +168,50 @@ class RoomService {
         throw insertError;
       }
 
-      // Aggiungi host come membro
+      // Aggiungi host come membro - con timeout
       console.log('Adding host as member...');
       const memberStartTime = Date.now();
-      const { error: memberError } = await supabase
-        .from('room_members')
-        .insert({
-          room_id: roomData.id,
-          user_id: hostId,
-          nickname: hostNickname,
-          is_host: true,
-          status: 'ready'
-        });
       
-      const memberTime = Date.now() - memberStartTime;
-      console.log(`Member insert completed in ${memberTime}ms`);
+      try {
+        const memberPromise = supabase
+          .from('room_members')
+          .insert({
+            room_id: roomData.id,
+            user_id: hostId,
+            nickname: hostNickname,
+            is_host: true,
+            status: 'ready'
+          });
+        
+        // Timeout di 2 secondi per inserimento membro
+        const memberTimeout = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Member insert timeout')), 2000);
+        });
+        
+        const { error: memberError } = await Promise.race([memberPromise, memberTimeout]) as any;
+        
+        const memberTime = Date.now() - memberStartTime;
+        console.log(`Member insert completed in ${memberTime}ms`);
+        
+        if (memberError && memberError.message !== 'Member insert timeout') {
+          console.error('=== MEMBER INSERT ERROR ===');
+          console.error('Error code:', memberError.code);
+          console.error('Error message:', memberError.message);
+          
+          // Se è un errore di constraint (utente già membro), non è critico
+          if (memberError.code === '23505') {
+            console.warn('User already member (constraint violation) - non-critical, continuing...');
+          } else {
+            throw memberError;
+          }
+        }
+      } catch (memberError: any) {
+        if (memberError?.message === 'Member insert timeout') {
+          console.warn('Member insert timeout - non-critical, continuing...');
+        } else {
+          throw memberError;
+        }
+      }
 
       if (memberError) {
         console.error('=== MEMBER INSERT ERROR ===');

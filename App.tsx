@@ -391,54 +391,92 @@ const App: React.FC = () => {
       }} />;
       case 'profile': return (
         <div className="flex flex-col h-full bg-black text-white p-6 pt-16 overflow-y-auto pb-32 no-scrollbar">
-          <div className="flex flex-col items-center gap-4 mb-8">
+          {/* Header con effetto liquid glass */}
+          <div className="flex flex-col items-center gap-5 mb-8">
              {!isGuest ? (
-               <AvatarUpload 
-                 currentAvatarUrl={avatarUrl}
-                 onAvatarUpdated={(url) => setAvatarUrl(url)}
-               />
+               <div className="relative">
+                 <div className="absolute inset-0 bg-gradient-to-br from-red-600/20 via-purple-700/20 to-indigo-800/20 rounded-[40px] blur-2xl" />
+                 <AvatarUpload 
+                   currentAvatarUrl={avatarUrl}
+                   onAvatarUpdated={(url) => setAvatarUrl(url)}
+                 />
+               </div>
              ) : (
-               <div className="w-24 h-24 bg-gradient-to-br from-red-600 via-purple-700 to-indigo-800 rounded-[32px] flex items-center justify-center text-3xl font-black italic shadow-2xl border border-white/10">
-                 <span>MM</span>
+               <div className="relative">
+                 <div className="absolute inset-0 bg-gradient-to-br from-red-600/30 via-purple-700/30 to-indigo-800/30 rounded-[40px] blur-2xl animate-pulse" />
+                 <div className="relative w-28 h-28 bg-gradient-to-br from-red-600 via-purple-700 to-indigo-800 rounded-[40px] flex items-center justify-center text-4xl font-black italic shadow-2xl border-2 border-white/20 backdrop-blur-xl">
+                   <span className="bg-gradient-to-br from-white to-white/80 bg-clip-text text-transparent">MM</span>
+                 </div>
                </div>
              )}
-             <div className="text-center">
-                <h2 className="text-2xl font-black uppercase italic tracking-tighter">{isGuest ? 'Account Ospite' : nickname || 'Utente Premium'}</h2>
-                <p className="text-[9px] font-black uppercase tracking-[0.4em] opacity-20">
-                  {userStats ? `Match: ${userStats.matches_found} • Film: ${userStats.movies_liked}` : 'Livello Cinefilo: 1'}
-                </p>
+             <div className="text-center space-y-2">
+                <h2 className="text-3xl font-black uppercase italic tracking-tighter bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">
+                  {isGuest ? 'Account Ospite' : nickname || 'Utente Premium'}
+                </h2>
+                {!isGuest && userStats && (
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-50">
+                    Match: {userStats.matches_found} • Film: {userStats.movies_liked}
+                  </p>
+                )}
+                {isGuest && (
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30">
+                    Livello Cinefilo: 1
+                  </p>
+                )}
              </div>
           </div>
           
           {isGuest ? (
-            <div className="space-y-4 mb-8">
-               <p className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] text-center mb-2">Registrati per sbloccare tutto</p>
+            <div className="space-y-6 mb-8">
+               {/* Header con effetto glass */}
+               <div className="text-center space-y-2 mb-6">
+                 <h3 className="text-2xl font-black uppercase italic tracking-tighter bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">
+                   Accedi a MovieMatch
+                 </h3>
+                 <p className="text-[10px] font-black opacity-40 uppercase tracking-[0.3em]">
+                   Registrati per sbloccare tutto
+                 </p>
+               </div>
                
                {!showEmailAuth ? (
-                 <>
+                 <div className="space-y-4">
+                   {/* Apple Login - Stile iOS Liquid Glass */}
                    <HapticButton 
                     onClick={() => handleSocialLogin('apple')}
-                    className="w-full py-4 bg-white text-black rounded-2xl font-black text-base flex items-center justify-center gap-3 active:scale-95 transition-all shadow-xl"
+                    className="group relative w-full py-5 bg-white/95 backdrop-blur-2xl text-black rounded-[24px] font-black text-base flex items-center justify-center gap-3 active:scale-[0.97] transition-all duration-300 shadow-2xl shadow-white/20 border border-white/30 overflow-hidden"
                    >
-                      <Apple fill="currentColor" size={20} /> Accedi con Apple
+                     <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                     <Apple fill="currentColor" size={22} className="relative z-10" /> 
+                     <span className="relative z-10">Accedi con Apple</span>
                    </HapticButton>
+                   
+                   {/* Google Login - Stile Netflix */}
                    <HapticButton 
                     onClick={() => handleSocialLogin('google')}
-                    className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl font-black text-base flex items-center justify-center gap-3 active:scale-95 transition-all"
+                    className="group relative w-full py-5 bg-gradient-to-br from-red-600/90 via-red-700/90 to-red-800/90 backdrop-blur-2xl rounded-[24px] font-black text-base text-white flex items-center justify-center gap-3 active:scale-[0.97] transition-all duration-300 shadow-2xl shadow-red-600/30 border border-red-500/30 overflow-hidden"
                    >
-                      <Mail size={20} /> Accedi con Google
+                     <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                     <Mail size={22} className="relative z-10" /> 
+                     <span className="relative z-10">Accedi con Google</span>
                    </HapticButton>
+                   
+                   {/* Email Login - Stile Liquid Glass */}
                    <HapticButton 
                     onClick={() => setShowEmailAuth(true)}
-                    className="w-full py-4 bg-white/10 border border-white/20 rounded-2xl font-black text-base flex items-center justify-center gap-3 active:scale-95 transition-all"
+                    className="group relative w-full py-5 bg-white/5 backdrop-blur-2xl border border-white/20 rounded-[24px] font-black text-base text-white flex items-center justify-center gap-3 active:scale-[0.97] transition-all duration-300 shadow-xl shadow-black/20 hover:bg-white/10 hover:border-white/30 overflow-hidden"
                    >
-                      <Mail size={20} /> Accedi con Email
+                     <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                     <Mail size={22} className="relative z-10" /> 
+                     <span className="relative z-10">Accedi con Email</span>
                    </HapticButton>
-                 </>
+                 </div>
                ) : (
-                 <div className="space-y-4">
-                   <div className="flex items-center justify-between mb-4">
-                     <h3 className="text-sm font-black uppercase">{isSignUp ? 'Registrati' : 'Accedi'}</h3>
+                 <div className="space-y-5">
+                   {/* Header con effetto glass */}
+                   <div className="flex items-center justify-between mb-2 pb-4 border-b border-white/10">
+                     <h3 className="text-lg font-black uppercase italic tracking-tight bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">
+                       {isSignUp ? 'Crea Account' : 'Accedi'}
+                     </h3>
                      <button 
                        onClick={() => {
                          setShowEmailAuth(false);
@@ -447,45 +485,51 @@ const App: React.FC = () => {
                          setSignupNickname('');
                          setIsSignUp(false);
                        }}
-                       className="text-[10px] font-black opacity-40 hover:opacity-100 transition-opacity"
+                       className="text-[10px] font-black opacity-50 hover:opacity-100 transition-opacity px-3 py-1.5 bg-white/5 rounded-full border border-white/10"
                      >
-                       Indietro
+                       ← Indietro
                      </button>
                    </div>
                    
-                   {isSignUp && (
-                     <div>
-                       <label className="text-[9px] font-black opacity-40 uppercase tracking-widest block mb-2">Nickname</label>
-                       <NicknameInput
-                         value={signupNickname}
-                         onChange={setSignupNickname}
-                         placeholder="Il tuo nickname"
-                         className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-12 font-bold focus:outline-none focus:border-blue-600/50 transition-colors text-white"
+                   {/* Form con effetto liquid glass */}
+                   <div className="space-y-4 bg-white/5 backdrop-blur-2xl rounded-[28px] p-6 border border-white/10 shadow-2xl">
+                     {isSignUp && (
+                       <div className="space-y-2">
+                         <label className="text-[9px] font-black opacity-60 uppercase tracking-widest block px-1">Nickname</label>
+                         <div className="relative">
+                           <NicknameInput
+                             value={signupNickname}
+                             onChange={setSignupNickname}
+                             placeholder="Il tuo nickname"
+                             className="w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-[20px] px-5 py-4 pr-12 font-bold focus:outline-none focus:border-red-600/50 focus:bg-white/15 transition-all duration-300 text-white placeholder:text-white/30 shadow-lg"
+                           />
+                         </div>
+                       </div>
+                     )}
+                     
+                     <div className="space-y-2">
+                       <label className="text-[9px] font-black opacity-60 uppercase tracking-widest block px-1">Email</label>
+                       <EmailInput
+                         value={email}
+                         onChange={setEmail}
+                         placeholder="tua@email.com"
+                         className="w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-[20px] px-5 py-4 font-bold focus:outline-none focus:border-red-600/50 focus:bg-white/15 transition-all duration-300 text-white placeholder:text-white/30 shadow-lg"
                        />
                      </div>
-                   )}
-                   
-                   <div>
-                     <label className="text-[9px] font-black opacity-40 uppercase tracking-widest block mb-2">Email</label>
-                     <EmailInput
-                       value={email}
-                       onChange={setEmail}
-                       placeholder="tua@email.com"
-                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold focus:outline-none focus:border-blue-600/50 transition-colors text-white"
-                     />
+                     
+                     <div className="space-y-2">
+                       <label className="text-[9px] font-black opacity-60 uppercase tracking-widest block px-1">Password</label>
+                       <input
+                         type="password"
+                         value={password}
+                         onChange={(e) => setPassword(e.target.value)}
+                         placeholder="••••••••"
+                         className="w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-[20px] px-5 py-4 font-bold focus:outline-none focus:border-red-600/50 focus:bg-white/15 transition-all duration-300 text-white placeholder:text-white/30 shadow-lg"
+                       />
+                     </div>
                    </div>
                    
-                   <div>
-                     <label className="text-[9px] font-black opacity-40 uppercase tracking-widest block mb-2">Password</label>
-                     <input
-                       type="password"
-                       value={password}
-                       onChange={(e) => setPassword(e.target.value)}
-                       placeholder="••••••••"
-                       className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 font-bold focus:outline-none focus:border-blue-600/50 transition-colors"
-                     />
-                   </div>
-                   
+                   {/* Submit button con effetto Netflix */}
                    <HapticButton
                      onClick={async () => {
                        if (!email || !password) {
@@ -612,14 +656,17 @@ const App: React.FC = () => {
                        }
                      }}
                      disabled={loading || !email || !password || (isSignUp && !signupNickname)}
-                     className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl font-black text-sm flex items-center justify-center gap-3 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                     className="group relative w-full py-5 bg-gradient-to-br from-red-600 via-red-700 to-red-800 text-white rounded-[24px] font-black text-base flex items-center justify-center gap-3 active:scale-[0.97] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-2xl shadow-red-600/30 border border-red-500/30 overflow-hidden"
                    >
-                     {loading ? 'Caricamento...' : (isSignUp ? 'Registrati' : 'Accedi')}
+                     <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                     <span className="relative z-10">
+                       {loading ? 'Caricamento...' : (isSignUp ? 'Crea Account' : 'Accedi')}
+                     </span>
                    </HapticButton>
                    
                    <button
                      onClick={() => setIsSignUp(!isSignUp)}
-                     className="w-full text-center text-[10px] font-black opacity-40 hover:opacity-100 transition-opacity"
+                     className="w-full text-center text-[10px] font-black opacity-50 hover:opacity-100 transition-opacity py-2 px-4 rounded-full bg-white/5 border border-white/10 hover:bg-white/10"
                    >
                      {isSignUp ? 'Hai già un account? Accedi' : 'Non hai un account? Registrati'}
                    </button>
@@ -628,44 +675,46 @@ const App: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-6 mb-8">
-              <div className="space-y-4">
+              {/* Form profilo con effetto liquid glass */}
+              <div className="bg-white/5 backdrop-blur-2xl rounded-[32px] p-6 border border-white/10 shadow-2xl space-y-5">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black opacity-40 uppercase tracking-widest px-1">Nickname per gli amici</label>
+                  <label className="text-[10px] font-black opacity-60 uppercase tracking-widest px-1">Nickname per gli amici</label>
                   <input 
                     type="text" 
                     value={nickname} 
                     onChange={(e) => setNickname(e.target.value)}
                     onBlur={saveProfile}
                     placeholder="Il tuo nickname..."
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 font-bold focus:outline-none focus:border-red-600/50 transition-colors"
+                    className="w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-[20px] px-5 py-4 font-bold focus:outline-none focus:border-red-600/50 focus:bg-white/15 transition-all duration-300 text-white placeholder:text-white/30 shadow-lg"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black opacity-40 uppercase tracking-widest px-1">La tua Bio</label>
+                  <label className="text-[10px] font-black opacity-60 uppercase tracking-widest px-1">La tua Bio</label>
                   <textarea 
                     value={bio} 
                     onChange={(e) => setBio(e.target.value)}
                     onBlur={saveProfile}
                     placeholder="Scrivi qualcosa su di te..."
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-3.5 font-bold h-24 focus:outline-none focus:border-red-600/50 transition-colors resize-none"
+                    className="w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-[20px] px-5 py-4 font-bold h-24 focus:outline-none focus:border-red-600/50 focus:bg-white/15 transition-all duration-300 text-white placeholder:text-white/30 resize-none shadow-lg"
                   />
                 </div>
               </div>
 
-              <div className="space-y-4 pt-4 border-t border-white/5">
-                <label className="text-[10px] font-black opacity-40 uppercase tracking-widest px-1">Cerca Amici</label>
+              {/* Cerca amici con effetto glass */}
+              <div className="bg-white/5 backdrop-blur-2xl rounded-[32px] p-6 border border-white/10 shadow-2xl space-y-4">
+                <label className="text-[10px] font-black opacity-60 uppercase tracking-widest px-1 block">Cerca Amici</label>
                 <div className="relative">
-                  <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" />
+                  <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/40 z-10" />
                   <input 
                     type="text" 
                     value={searchFriend}
                     onChange={(e) => setSearchFriend(e.target.value)}
                     placeholder="Nome amico..."
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-5 py-3.5 font-bold focus:outline-none focus:border-blue-600/50 transition-colors"
+                    className="w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-[20px] pl-14 pr-5 py-4 font-bold focus:outline-none focus:border-blue-600/50 focus:bg-white/15 transition-all duration-300 text-white placeholder:text-white/30 shadow-lg"
                   />
                 </div>
                 {searchFriend && (
-                  <div className="space-y-2 bg-white/5 rounded-2xl p-2 border border-white/5 animate-in fade-in slide-in-from-top-2">
+                  <div className="space-y-2 bg-white/5 backdrop-blur-xl rounded-[20px] p-3 border border-white/10 animate-in fade-in slide-in-from-top-2 shadow-lg">
                     {loading ? (
                       <p className="text-center py-4 text-[10px] font-black opacity-20 uppercase tracking-widest">Ricerca in corso...</p>
                     ) : searchResults.length > 0 ? (
@@ -710,28 +759,33 @@ const App: React.FC = () => {
             </div>
           )}
 
-          <div className="bg-[#1C1C1E] p-6 rounded-[32px] border border-white/5 space-y-4 shadow-2xl mb-6">
-             <div className="flex justify-between items-center">
-               <span className="text-[10px] font-black uppercase opacity-40 tracking-widest">Film Salvati</span>
-               <span className="font-black text-xl text-red-600 italic tracking-tighter">{likedMovies.length}</span>
-             </div>
-             {userStats && (
-               <>
-                 <div className="flex justify-between items-center">
-                   <span className="text-[10px] font-black uppercase opacity-40 tracking-widest">Match Trovati</span>
-                   <span className="font-black text-lg text-green-500 italic tracking-tighter">{userStats.matches_found}</span>
-                 </div>
-                 <div className="flex justify-between items-center">
-                   <span className="text-[10px] font-black uppercase opacity-40 tracking-widest">Stanze Create</span>
-                   <span className="font-black text-lg text-purple-500 italic tracking-tighter">{userStats.rooms_created}</span>
-                 </div>
-               </>
-             )}
-             <div className="flex justify-between items-center">
-               <span className="text-[10px] font-black uppercase opacity-40 tracking-widest">Stato Account</span>
-               <span className={`font-black text-[9px] uppercase px-3 py-1 rounded-full ${isGuest ? 'bg-white/5 text-white/30' : 'bg-red-600 text-white shadow-lg shadow-red-600/20'}`}>{isGuest ? 'Limitato' : 'Premium'}</span>
-             </div>
-          </div>
+          {/* Mostra statistiche solo se loggato */}
+          {!isGuest && (
+            <div className="bg-white/5 backdrop-blur-2xl p-6 rounded-[32px] border border-white/10 space-y-4 shadow-2xl mb-6">
+              <div className="flex justify-between items-center py-2">
+                <span className="text-[10px] font-black uppercase opacity-60 tracking-widest">Film Salvati</span>
+                <span className="font-black text-xl text-red-600 italic tracking-tighter">{likedMovies.length}</span>
+              </div>
+              {userStats && (
+                <>
+                  <div className="flex justify-between items-center py-2 border-t border-white/5">
+                    <span className="text-[10px] font-black uppercase opacity-60 tracking-widest">Match Trovati</span>
+                    <span className="font-black text-lg text-green-500 italic tracking-tighter">{userStats.matches_found}</span>
+                  </div>
+                  <div className="flex justify-between items-center py-2 border-t border-white/5">
+                    <span className="text-[10px] font-black uppercase opacity-60 tracking-widest">Stanze Create</span>
+                    <span className="font-black text-lg text-purple-500 italic tracking-tighter">{userStats.rooms_created}</span>
+                  </div>
+                </>
+              )}
+              <div className="flex justify-between items-center py-2 border-t border-white/5">
+                <span className="text-[10px] font-black uppercase opacity-60 tracking-widest">Stato Account</span>
+                <span className="font-black text-[9px] uppercase px-4 py-1.5 rounded-full bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-600/30 border border-red-500/30">
+                  Premium
+                </span>
+              </div>
+            </div>
+          )}
           
           {!isGuest && (
              <HapticButton 

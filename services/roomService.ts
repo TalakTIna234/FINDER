@@ -146,6 +146,25 @@ class RoomService {
         }
 
         console.log('✓ Room created in database:', roomData.id);
+        
+      } catch (insertError: any) {
+        const insertTime = Date.now() - insertStartTime;
+        console.error(`Room insert failed after ${insertTime}ms`);
+        console.error('=== ROOM INSERT ERROR ===');
+        console.error('Error:', insertError);
+        
+        // Se è un errore di rete
+        if (insertError?.message?.includes('Failed to fetch') || 
+            insertError?.message?.includes('NetworkError') ||
+            insertError?.message?.includes('Network request failed') ||
+            insertError?.name === 'TypeError' ||
+            (insertError?.message && typeof insertError.message === 'string' && insertError.message.includes('fetch'))) {
+          throw new Error('Errore di connessione a Supabase. Verifica la connessione internet e riprova.');
+        }
+        
+        // Rilancia altri errori (già gestiti sopra)
+        throw insertError;
+      }
 
       // Aggiungi host come membro
       console.log('Adding host as member...');

@@ -47,6 +47,18 @@
             user-select: none;
         }
     </style>
+    <script>
+      // Applica dark mode immediatamente all'avvio (prima che React carichi)
+      (function() {
+        const saved = localStorage.getItem('mm_darkMode');
+        const shouldBeDark = saved !== null ? saved === 'true' : true; // Default dark mode
+        if (shouldBeDark) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      })();
+    </script>
 <script type="importmap">
 {
   "imports": {
@@ -62,7 +74,7 @@
 }
 </script>
 </head>
-<body class="bg-[#000000] dark text-[#F2F2F7] overflow-hidden no-select">
+<body class="bg-[#000000] text-[#F2F2F7] overflow-hidden no-select">
     <div id="root"></div>
 <script type="module" src="/index.tsx"></script>
 </body>

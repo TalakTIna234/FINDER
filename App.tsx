@@ -54,14 +54,47 @@ const App: React.FC = () => {
   const [password, setPassword] = useState('');
   const [signupNickname, setSignupNickname] = useState('');
 
-  // Applica dark mode al DOM
+  // Applica dark mode al DOM all'avvio e quando cambia
   useEffect(() => {
+    // Applica immediatamente all'avvio
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
     }
+    console.log('Dark mode applied:', isDarkMode);
   }, [isDarkMode]);
+  
+  // Sincronizza dark mode all'avvio del componente
+  useEffect(() => {
+    // Sincronizza con lo stato salvato (già applicato dallo script inline)
+    const saved = localStorage.getItem('mm_darkMode');
+    const shouldBeDark = saved !== null ? saved === 'true' : true; // Default dark mode
+    if (shouldBeDark !== isDarkMode) {
+      setIsDarkMode(shouldBeDark);
+    }
+    // Assicura che la classe sia applicata (backup)
+    if (shouldBeDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []); // Solo all'avvio
+  
+  // Funzione per toggle del dark mode
+  const toggleDarkMode = () => {
+    setIsDarkMode(prev => {
+      const newValue = !prev;
+      console.log('Toggling dark mode from', prev, 'to', newValue);
+      // Applica immediatamente al DOM
+      if (newValue) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      return newValue;
+    });
+  };
 
   useEffect(() => {
     // Gestisci callback OAuth (Supabase può usare hash o query params)
@@ -446,7 +479,7 @@ const App: React.FC = () => {
     if (roomViewMode) return <RoomView mode={roomViewMode} onBack={() => setRoomViewMode(null)} onStartSession={(movies) => { setCurrentMovies(movies); setIsSessionActive(true); }} />;
 
     switch (activeTab) {
-      case 'home': return <HomeView onCreateRoom={() => setRoomViewMode('create')} onJoinRoom={() => setRoomViewMode('join')} toggleTheme={() => setIsDarkMode(!isDarkMode)} isDarkMode={isDarkMode} isGuest={isGuest} />;
+      case 'home': return <HomeView onCreateRoom={() => setRoomViewMode('create')} onJoinRoom={() => setRoomViewMode('join')} toggleTheme={toggleDarkMode} isDarkMode={isDarkMode} isGuest={isGuest} />;
       case 'playlist': return <PlaylistView likedMovies={likedMovies} onRemove={async (id) => { 
         if (!isGuest) {
           await playlistService.removeMovie(id);

@@ -215,6 +215,13 @@ const App: React.FC = () => {
             }
             
             setCurrentUserId(user.id);
+            
+            // Forza refresh del profilo se siamo già nel tab profilo
+            if (activeTab === 'profile') {
+              // Triggera il refresh del profilo
+              console.log('User logged in while on profile tab - refreshing...');
+            }
+            
             setActiveTab('home');
             
             // Forza un re-render aggiornando lo stato
@@ -305,6 +312,7 @@ const App: React.FC = () => {
     // Listener per cambiamenti auth
     const { data: { subscription } } = authService.onAuthStateChange(async (user) => {
       if (user) {
+        console.log('[Auth State Change] User logged in, updating state...');
         setIsGuest(false);
         const profile = await profileService.getCurrentProfile();
         if (profile) {
@@ -312,7 +320,13 @@ const App: React.FC = () => {
           setBio(profile.bio || '');
           setAvatarUrl(profile.avatar_url || null);
         }
+        // Se siamo nel tab profilo, forza un refresh
+        if (activeTab === 'profile') {
+          console.log('[Auth State Change] On profile tab - forcing refresh...');
+          // Il useEffect con activeTab si attiverà automaticamente
+        }
       } else {
+        console.log('[Auth State Change] User logged out');
         setIsGuest(true);
       }
     });

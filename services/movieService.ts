@@ -56,12 +56,12 @@ export const movieService = {
           console.log(`[TMDB] Attempt ${attempt + 1}/2: Genre ${validGenre.name} (ID: ${genreId}), Page ${page}, Sort: ${randomSort}`);
           console.log(`[TMDB] URL: ${url.replace(TMDB_ACCESS_TOKEN, '***')}`);
           
-          // Crea un AbortController per timeout - massimo 3 secondi per velocità
+          // Crea un AbortController per timeout - 5 secondi per dare tempo alla connessione
           const controller = new AbortController();
           const timeoutId = setTimeout(() => {
-            console.error(`[TMDB] Timeout after 3 seconds on attempt ${attempt + 1}`);
+            console.error(`[TMDB] Timeout after 5 seconds on attempt ${attempt + 1}`);
             controller.abort();
-          }, 3000); // 3 secondi timeout per massima velocità
+          }, 5000); // 5 secondi timeout per dare tempo alla connessione
           
           try {
             const response = await fetch(url, { 
@@ -120,16 +120,26 @@ export const movieService = {
           } catch (fetchError: any) {
             clearTimeout(timeoutId);
             
-            // Se è un abort (timeout), riprova immediatamente senza delay
+            // Gestione errori di rete più dettagliata
             if (fetchError.name === 'AbortError') {
               console.warn(`[TMDB] Timeout on attempt ${attempt + 1}, retrying immediately...`);
-              lastError = new Error('Timeout nella chiamata a TMDB.');
+              lastError = new Error('Timeout nella chiamata a TMDB. La connessione è lenta.');
               if (attempt < 1) {
                 continue; // Riprova immediatamente senza delay
               }
+            } else if (fetchError.message?.includes('Failed to fetch') || 
+                       fetchError.message?.includes('NetworkError') ||
+                       fetchError.message?.includes('Network request failed') ||
+                       fetchError.name === 'TypeError') {
+              console.warn(`[TMDB] Network error on attempt ${attempt + 1}:`, fetchError.message);
+              lastError = new Error('Errore di connessione. Verifica la tua connessione internet.');
+              if (attempt < 1) {
+                continue; // Riprova immediatamente
+              }
+            } else {
+              // Altri errori: rilancia
+              throw fetchError;
             }
-            
-            throw fetchError;
           }
           
         } catch (attemptError) {

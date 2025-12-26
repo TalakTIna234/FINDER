@@ -80,14 +80,14 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
     setLoading(true);
     let timeoutCleared = false;
     
-    // Timeout di sicurezza - massimo 4 secondi per operatività
+    // Timeout di sicurezza - 8 secondi per dare tempo alle chiamate
     const timeoutId = setTimeout(() => {
       if (!timeoutCleared) {
-        console.error('Timeout: handleSelectGenre took more than 4 seconds');
+        console.error('Timeout: handleSelectGenre took more than 8 seconds');
         alert('Il caricamento sta impiegando troppo tempo. Verifica la connessione internet e riprova.');
         setLoading(false);
       }
-    }, 4000);
+    }, 8000);
     
     try {
       console.log('=== STARTING GENRE SELECTION ===');
@@ -101,10 +101,10 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       
       let movies: Movie[] = [];
       try {
-        // Timeout specifico per la chiamata TMDB (3 secondi per velocità)
+        // Timeout specifico per la chiamata TMDB (6 secondi per dare tempo)
         const tmdbTimeout = setTimeout(() => {
-          console.error('[1/4] TMDB call timeout after 3 seconds');
-        }, 3000);
+          console.error('[1/4] TMDB call timeout after 6 seconds');
+        }, 6000);
         
         movies = await movieService.discoverByGenre(genreId);
         clearTimeout(tmdbTimeout);
@@ -118,12 +118,14 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         
         if (errorMsg.includes('Token') || errorMsg.includes('autenticazione')) {
           userMessage += 'Il token TMDB non è valido o non è configurato.\nVerifica la variabile d\'ambiente VITE_TMDB_ACCESS_TOKEN.';
-        } else if (errorMsg.includes('Timeout')) {
-          userMessage += 'La chiamata a TMDB sta impiegando troppo tempo.\nVerifica la connessione internet e riprova.';
+        } else if (errorMsg.includes('Timeout') || errorMsg.includes('connessione è lenta')) {
+          userMessage += 'La chiamata a TMDB sta impiegando troppo tempo.\nLa connessione potrebbe essere lenta. Riprova.';
+        } else if (errorMsg.includes('Errore di connessione') || errorMsg.includes('internet')) {
+          userMessage += 'Problema di connessione rilevato.\nVerifica la connessione internet e riprova.';
         } else if (errorMsg.includes('Nessun film trovato')) {
           userMessage += 'Nessun film disponibile per questo genere.\nProva con un altro genere.';
         } else {
-          userMessage += 'Verifica che:\n1. Il token TMDB sia configurato correttamente\n2. La connessione internet sia attiva\n3. Controlla la console per dettagli.';
+          userMessage += 'Errore durante il caricamento.\nVerifica:\n1. La connessione internet\n2. Il token TMDB\n3. Controlla la console per dettagli.';
         }
         
         alert(userMessage);

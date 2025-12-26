@@ -572,16 +572,34 @@ const App: React.FC = () => {
                      <span className="relative z-10">Accedi con Email</span>
                    </HapticButton>
                    
-                   {/* Link piccolo per registrazione */}
-                   <div className="text-center pt-2">
-                     <button
+                   {/* Link testo per registrazione */}
+                   <div className="text-center pt-3">
+                     <span
                        onClick={() => {
                          setShowEmailAuth(true);
                          setIsSignUp(true); // Imposta in modalità registrazione
                        }}
-                       className="text-[9px] font-black opacity-50 dark:opacity-60 hover:opacity-100 transition-opacity uppercase tracking-widest text-white dark:text-black"
+                       className="text-[9px] font-black opacity-50 dark:opacity-60 hover:opacity-100 transition-opacity uppercase tracking-widest text-white dark:text-black cursor-pointer"
                      >
                        Non hai un account? <span className="text-red-500 dark:text-red-400">Registrati</span>
+                     </span>
+                   </div>
+                   
+                   {/* Icone registrazione veloce */}
+                   <div className="flex items-center justify-center gap-6 pt-4">
+                     <button
+                       onClick={() => handleSocialLogin('google')}
+                       className="p-3 bg-white/5 dark:bg-black/10 rounded-full border border-white/10 dark:border-black/20 hover:bg-white/10 dark:hover:bg-black/20 transition-all duration-300 active:scale-95"
+                       title="Registrati con Google"
+                     >
+                       <Mail size={20} className="text-white dark:text-black" />
+                     </button>
+                     <button
+                       onClick={() => handleSocialLogin('apple')}
+                       className="p-3 bg-white/5 dark:bg-black/10 rounded-full border border-white/10 dark:border-black/20 hover:bg-white/10 dark:hover:bg-black/20 transition-all duration-300 active:scale-95"
+                       title="Registrati con Apple"
+                     >
+                       <Apple size={20} className="text-white dark:text-black" fill="currentColor" />
                      </button>
                    </div>
                  </div>

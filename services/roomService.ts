@@ -32,25 +32,38 @@ class RoomService {
       console.log('Parameters:', { hostId, hostNickname, moviesCount: movies.length });
       console.log('Timestamp:', new Date().toISOString());
       
-      // Verifica che le tabelle esistano prima di procedere
+      // Verifica che le tabelle esistano prima di procedere - OTTIMIZZATO con timeout
       console.log('Checking if rooms table exists...');
       try {
-        const { error: testError } = await supabase
+        const tableCheckPromise = supabase
           .from('rooms')
           .select('id')
           .limit(1);
+        
+        // Timeout di 1 secondo per controllo tabella
+        const tableCheckTimeout = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Table check timeout')), 1000);
+        });
+        
+        const { error: testError } = await Promise.race([tableCheckPromise, tableCheckTimeout]) as any;
         
         if (testError) {
           if (testError.code === '42P01' || testError.message?.includes('does not exist')) {
             throw new Error('La tabella "rooms" non esiste. Esegui lo schema SQL in Supabase Dashboard → SQL Editor. Vedi il file supabase-rooms-schema.sql');
           }
-          console.warn('Warning checking rooms table:', testError);
+          if (testError.message !== 'Table check timeout') {
+            console.warn('Warning checking rooms table:', testError);
+          }
         } else {
           console.log('✓ Rooms table exists');
         }
-      } catch (tableCheckError) {
-        console.error('Table check failed:', tableCheckError);
-        throw tableCheckError;
+      } catch (tableCheckError: any) {
+        if (tableCheckError?.message === 'Table check timeout') {
+          console.warn('Table check timeout - assuming table exists and continuing...');
+        } else {
+          console.error('Table check failed:', tableCheckError);
+          throw tableCheckError;
+        }
       }
       
       // Genera codice univoco

@@ -292,10 +292,36 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
 
   const startSession = async () => {
     if (!roomCode) return;
-    const currentRoom = await roomService.getRoom(roomCode);
-    if (currentRoom) {
-      await roomService.startRoom(roomCode);
-      onStartSession(currentRoom.movies);
+    
+    try {
+      const currentRoom = await roomService.getRoom(roomCode);
+      if (!currentRoom) {
+        console.error('Room not found');
+        alert('Stanza non trovata. Riprova.');
+        return;
+      }
+      
+      if (currentRoom.movies.length === 0) {
+        console.error('Room has no movies');
+        alert('La stanza non ha film. Attendi che vengano caricati.');
+        return;
+      }
+      
+      console.log('[RoomView] Host starting session...');
+      const success = await roomService.startRoom(roomCode);
+      
+      if (success) {
+        console.log('[RoomView] Room status updated to playing');
+        // L'host entra immediatamente in sessione
+        // Gli altri membri entreranno automaticamente tramite la subscription real-time
+        onStartSession(currentRoom.movies);
+      } else {
+        console.error('Failed to start room');
+        alert('Errore nell\'avvio della sessione. Riprova.');
+      }
+    } catch (error) {
+      console.error('Error starting session:', error);
+      alert('Errore nell\'avvio della sessione. Riprova.');
     }
   };
 

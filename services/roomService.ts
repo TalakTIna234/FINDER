@@ -104,9 +104,10 @@ class RoomService {
       });
       
       const insertStartTime = Date.now();
+      let roomData: any = null;
       
       try {
-        const { data: roomData, error: roomError } = await supabase
+        const { data, error: roomError } = await supabase
           .from('rooms')
           .insert({
             code,
@@ -141,10 +142,11 @@ class RoomService {
           throw new Error(`Errore nella creazione della stanza: ${roomError.message} (codice: ${roomError.code})`);
         }
 
-        if (!roomData) {
+        if (!data) {
           throw new Error('La stanza è stata creata ma non è stato possibile recuperare i dati. Riprova.');
         }
 
+        roomData = data;
         console.log('✓ Room created in database:', roomData.id);
         
       } catch (insertError: any) {

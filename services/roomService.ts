@@ -244,31 +244,37 @@ class RoomService {
         if (memberError?.message === 'Member insert timeout') {
           console.warn('Member insert timeout - non-critical, continuing...');
         } else {
-          throw memberError;
+          // Gestisci altri errori
+          console.error('=== MEMBER INSERT ERROR ===');
+          console.error('Error:', memberError);
+          
+          if (memberError?.code) {
+            console.error('Error code:', memberError.code);
+            console.error('Error message:', memberError.message);
+            console.error('Error details:', memberError.details);
+            console.error('Error hint:', memberError.hint);
+            
+            // Se la tabella non esiste, fornisci un messaggio più chiaro
+            if (memberError.code === '42P01' || memberError.message?.includes('does not exist')) {
+              throw new Error('La tabella "room_members" non esiste. Esegui lo schema SQL in Supabase Dashboard → SQL Editor. Vedi il file supabase-rooms-schema.sql');
+            }
+            
+            // Se è un errore di RLS policy
+            if (memberError.code === '42501' || memberError.message?.includes('permission denied') || memberError.message?.includes('policy')) {
+              throw new Error('Errore di permessi: verifica che le RLS policies per la tabella "room_members" siano configurate correttamente. Vedi supabase-rooms-schema.sql');
+            }
+            
+            // Se è un errore di constraint (utente già membro), non è critico
+            if (memberError.code === '23505') {
+              console.warn('User already member (constraint violation) - non-critical, continuing...');
+            } else {
+              throw new Error(`Errore nell'aggiunta dell'host come membro: ${memberError.message} (codice: ${memberError.code})`);
+            }
+          } else {
+            // Se non ha codice, rilancia
+            throw memberError;
+          }
         }
-      }
-
-      if (memberError) {
-        console.error('=== MEMBER INSERT ERROR ===');
-        console.error('Error code:', memberError.code);
-        console.error('Error message:', memberError.message);
-        console.error('Error details:', memberError.details);
-        
-        // Elimina la stanza se non riusciamo ad aggiungere l'host
-        console.log('Cleaning up: deleting room due to member insert failure...');
-        await supabase.from('rooms').delete().eq('id', roomData.id);
-        
-        // Se la tabella non esiste, fornisci un messaggio più chiaro
-        if (memberError.code === '42P01' || memberError.message?.includes('does not exist')) {
-          throw new Error('La tabella "room_members" non esiste. Esegui lo schema SQL in Supabase Dashboard → SQL Editor. Vedi il file supabase-rooms-schema.sql');
-        }
-        
-        // Se è un errore di RLS policy
-        if (memberError.code === '42501' || memberError.message?.includes('permission denied') || memberError.message?.includes('policy')) {
-          throw new Error('Errore di permessi: verifica che le RLS policies per la tabella "room_members" siano configurate correttamente. Vedi supabase-rooms-schema.sql');
-        }
-        
-        throw new Error(`Errore nell'aggiunta dell'host come membro: ${memberError.message} (codice: ${memberError.code})`);
       }
 
       console.log('✓ Host added as member successfully');

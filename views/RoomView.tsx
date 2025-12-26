@@ -868,8 +868,59 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       )}
 
       {step === 'lobby' && (
-        <div className="flex-1 flex flex-col space-y-10 pb-10">
+        <div className="flex-1 flex flex-col space-y-10 pb-32">
           <div className="bg-white/5 dark:bg-black/20 backdrop-blur-2xl rounded-[48px] p-10 text-center space-y-6 border border-white/20 dark:border-black/30 shadow-2xl relative overflow-hidden">
+            {/* Icona condivisione in alto a destra */}
+            <motion.button
+              whileHover={{ scale: 1.1, rotate: 5 }}
+              whileTap={{ scale: 0.95, rotate: -5 }}
+              onClick={async () => {
+                try {
+                  // Condivisione nativa (stile iPhone)
+                  if (navigator.share) {
+                    await navigator.share({
+                      title: 'MovieMatch - Unisciti alla mia stanza',
+                      text: `Unisciti alla mia stanza MovieMatch! Codice: ${roomCode}`,
+                      url: window.location.href
+                    });
+                  } else {
+                    // Fallback: copia codice e apri SMS
+                    await navigator.clipboard.writeText(roomCode);
+                    const smsLink = `sms:?body=${encodeURIComponent(`Unisciti alla mia stanza MovieMatch! Codice: ${roomCode}`)}`;
+                    window.location.href = smsLink;
+                  }
+                } catch (err) {
+                  // Se l'utente annulla la condivisione, non fare nulla
+                  if (err instanceof Error && err.name !== 'AbortError') {
+                    console.error('Error sharing:', err);
+                    // Fallback: copia solo il codice
+                    try {
+                      await navigator.clipboard.writeText(roomCode);
+                      alert('Codice copiato!');
+                    } catch (copyErr) {
+                      console.error('Error copying:', copyErr);
+                    }
+                  }
+                }
+              }}
+              className="absolute top-4 right-4 z-20 p-3 bg-white/10 dark:bg-black/20 backdrop-blur-xl rounded-full border border-white/20 dark:border-black/30 shadow-lg hover:bg-white/15 dark:hover:bg-black/30 transition-all group"
+            >
+              <motion.div
+                animate={{ 
+                  rotate: [0, 10, -10, 0],
+                  scale: [1, 1.1, 1]
+                }}
+                transition={{ 
+                  duration: 2,
+                  repeat: Infinity,
+                  repeatDelay: 3,
+                  ease: "easeInOut"
+                }}
+              >
+                <Share size={20} className="text-white dark:text-black group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors" />
+              </motion.div>
+            </motion.button>
+            
             {/* Effetti liquid glass */}
             <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-white/5 to-transparent dark:from-black/20 dark:via-black/10 dark:to-transparent rounded-[48px]" />
             <div className="absolute top-0 left-0 w-32 h-32 bg-red-600/10 dark:bg-red-500/10 blur-3xl rounded-full -ml-16 -mt-16" />
@@ -881,7 +932,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
               <h2 className="text-6xl font-black text-red-600 dark:text-red-500 font-mono tracking-[0.1em] drop-shadow-lg">{roomCode}</h2>
             </div>
             
-            <div className="flex flex-col gap-3 relative z-10">
+            <div className="relative z-10">
               <HapticButton 
                 onClick={async () => {
                   try {
@@ -895,32 +946,6 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                 className="px-8 py-3 bg-white/10 dark:bg-black/20 backdrop-blur-xl rounded-full font-black uppercase text-[10px] tracking-widest flex items-center gap-2 mx-auto active:bg-white/15 dark:active:bg-black/30 transition-all border border-white/20 dark:border-black/30 shadow-lg"
               >
                 <Copy size={14} /> Copia Codice
-              </HapticButton>
-              
-              <HapticButton 
-                onClick={async () => {
-                  try {
-                    // Condivisione SMS con solo il codice
-                    if (navigator.share) {
-                      await navigator.share({
-                        text: roomCode
-                      });
-                    } else {
-                      // Fallback: copia e mostra messaggio SMS
-                      await navigator.clipboard.writeText(roomCode);
-                      const smsLink = `sms:?body=${encodeURIComponent(roomCode)}`;
-                      window.location.href = smsLink;
-                    }
-                  } catch (err) {
-                    // Se l'utente annulla la condivisione, non fare nulla
-                    if (err instanceof Error && err.name !== 'AbortError') {
-                      console.error('Error sharing:', err);
-                    }
-                  }
-                }}
-                className="px-8 py-3 bg-white/10 dark:bg-black/20 backdrop-blur-xl rounded-full font-black uppercase text-[10px] tracking-widest flex items-center gap-2 mx-auto active:bg-white/15 dark:active:bg-black/30 transition-all border border-white/20 dark:border-black/30 shadow-lg"
-              >
-                <MessageSquare size={14} /> Invia SMS
               </HapticButton>
             </div>
           </div>

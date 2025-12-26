@@ -25,7 +25,16 @@ const App: React.FC = () => {
   const [likedMovies, setLikedMovies] = useState<Movie[]>([]);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [roomViewMode, setRoomViewMode] = useState<'create' | 'join' | null>(null);
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  // Carica dark mode da localStorage o usa default true
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('mm_darkMode');
+    return saved !== null ? saved === 'true' : true;
+  });
+  
+  // Salva dark mode in localStorage quando cambia
+  useEffect(() => {
+    localStorage.setItem('mm_darkMode', isDarkMode.toString());
+  }, [isDarkMode]);
   const [isGuest, setIsGuest] = useState(true);
 
   // Profile States
@@ -447,7 +456,7 @@ const App: React.FC = () => {
         localStorage.setItem('mm_playlist', JSON.stringify(updated));
       }} />;
       case 'profile': return (
-        <div className="flex flex-col h-full bg-black text-white p-6 pt-16 overflow-y-auto pb-32 no-scrollbar">
+        <div className="flex flex-col h-full bg-black dark:bg-white text-white dark:text-black p-6 pt-16 overflow-y-auto pb-32 no-scrollbar transition-colors duration-500">
           {/* Header con effetto liquid glass */}
           <div className="flex flex-col items-center gap-5 mb-8">
              {!isGuest ? (
@@ -467,16 +476,16 @@ const App: React.FC = () => {
                </div>
              )}
              <div className="text-center space-y-2">
-                <h2 className="text-3xl font-black uppercase italic tracking-tighter bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">
+                <h2 className="text-3xl font-black uppercase italic tracking-tighter bg-gradient-to-r from-white via-white/90 to-white/70 dark:from-black dark:via-black/90 dark:to-black/70 bg-clip-text text-transparent transition-all duration-500">
                   {isGuest ? 'Account Ospite' : nickname || 'Utente Premium'}
                 </h2>
                 {!isGuest && userStats && (
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-50">
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-50 dark:opacity-70 text-white dark:text-black transition-opacity duration-500">
                     Match: {userStats.matches_found} • Film: {userStats.movies_liked}
                   </p>
                 )}
                 {isGuest && (
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30">
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-30 dark:opacity-60 text-white dark:text-black transition-opacity duration-500">
                     Livello Cinefilo: 1
                   </p>
                 )}
@@ -487,10 +496,10 @@ const App: React.FC = () => {
             <div className="space-y-6 mb-8">
                {/* Header con effetto glass */}
                <div className="text-center space-y-2 mb-6">
-                 <h3 className="text-2xl font-black uppercase italic tracking-tighter bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">
+                 <h3 className="text-2xl font-black uppercase italic tracking-tighter bg-gradient-to-r from-white via-white/90 to-white/70 dark:from-black dark:via-black/90 dark:to-black/70 bg-clip-text text-transparent transition-all duration-500">
                    Accedi a MovieMatch
                  </h3>
-                 <p className="text-[10px] font-black opacity-40 uppercase tracking-[0.3em]">
+                 <p className="text-[10px] font-black opacity-40 dark:opacity-60 uppercase tracking-[0.3em] text-white dark:text-black transition-opacity duration-500">
                    Registrati per sbloccare tutto
                  </p>
                </div>
@@ -500,9 +509,9 @@ const App: React.FC = () => {
                    {/* Apple Login - Stile iOS Liquid Glass */}
                    <HapticButton 
                     onClick={() => handleSocialLogin('apple')}
-                    className="group relative w-full py-5 bg-white/95 backdrop-blur-2xl text-black rounded-[24px] font-black text-base flex items-center justify-center gap-3 active:scale-[0.97] transition-all duration-300 shadow-2xl shadow-white/20 border border-white/30 overflow-hidden"
+                    className="group relative w-full py-5 bg-white/95 dark:bg-black/95 backdrop-blur-2xl text-black dark:text-white rounded-[24px] font-black text-base flex items-center justify-center gap-3 active:scale-[0.97] transition-all duration-300 shadow-2xl shadow-white/20 dark:shadow-black/20 border border-white/30 dark:border-black/30 overflow-hidden"
                    >
-                     <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                     <div className="absolute inset-0 bg-gradient-to-br from-white/50 to-white/20 dark:from-black/50 dark:to-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                      <Apple fill="currentColor" size={22} className="relative z-10" /> 
                      <span className="relative z-10">Accedi con Apple</span>
                    </HapticButton>
@@ -510,7 +519,7 @@ const App: React.FC = () => {
                    {/* Google Login - Stile Netflix */}
                    <HapticButton 
                     onClick={() => handleSocialLogin('google')}
-                    className="group relative w-full py-5 bg-gradient-to-br from-red-600/90 via-red-700/90 to-red-800/90 backdrop-blur-2xl rounded-[24px] font-black text-base text-white flex items-center justify-center gap-3 active:scale-[0.97] transition-all duration-300 shadow-2xl shadow-red-600/30 border border-red-500/30 overflow-hidden"
+                    className="group relative w-full py-5 bg-gradient-to-br from-red-600/90 via-red-700/90 to-red-800/90 dark:from-red-500/90 dark:via-red-600/90 dark:to-red-700/90 backdrop-blur-2xl rounded-[24px] font-black text-base text-white flex items-center justify-center gap-3 active:scale-[0.97] transition-all duration-300 shadow-2xl shadow-red-600/30 dark:shadow-red-500/30 border border-red-500/30 dark:border-red-400/30 overflow-hidden"
                    >
                      <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                      <Mail size={22} className="relative z-10" /> 
@@ -520,9 +529,9 @@ const App: React.FC = () => {
                    {/* Email Login - Stile Liquid Glass */}
                    <HapticButton 
                     onClick={() => setShowEmailAuth(true)}
-                    className="group relative w-full py-5 bg-white/5 backdrop-blur-2xl border border-white/20 rounded-[24px] font-black text-base text-white flex items-center justify-center gap-3 active:scale-[0.97] transition-all duration-300 shadow-xl shadow-black/20 hover:bg-white/10 hover:border-white/30 overflow-hidden"
+                    className="group relative w-full py-5 bg-white/5 dark:bg-black/10 backdrop-blur-2xl border border-white/20 dark:border-black/30 rounded-[24px] font-black text-base text-white dark:text-black flex items-center justify-center gap-3 active:scale-[0.97] transition-all duration-300 shadow-xl shadow-black/20 dark:shadow-white/20 hover:bg-white/10 dark:hover:bg-black/20 hover:border-white/30 dark:hover:border-black/40 overflow-hidden"
                    >
-                     <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                     <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent dark:from-black/5 dark:to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                      <Mail size={22} className="relative z-10" /> 
                      <span className="relative z-10">Accedi con Email</span>
                    </HapticButton>
@@ -531,7 +540,7 @@ const App: React.FC = () => {
                  <div className="space-y-5">
                    {/* Header con effetto glass */}
                    <div className="flex items-center justify-between mb-2 pb-4 border-b border-white/10">
-                     <h3 className="text-lg font-black uppercase italic tracking-tight bg-gradient-to-r from-white via-white/90 to-white/70 bg-clip-text text-transparent">
+                     <h3 className="text-lg font-black uppercase italic tracking-tight bg-gradient-to-r from-white via-white/90 to-white/70 dark:from-black dark:via-black/90 dark:to-black/70 bg-clip-text text-transparent transition-all duration-500">
                        {isSignUp ? 'Crea Account' : 'Accedi'}
                      </h3>
                      <button 
@@ -542,46 +551,46 @@ const App: React.FC = () => {
                          setSignupNickname('');
                          setIsSignUp(false);
                        }}
-                       className="text-[10px] font-black opacity-50 hover:opacity-100 transition-opacity px-3 py-1.5 bg-white/5 rounded-full border border-white/10"
+                       className="text-[10px] font-black opacity-50 dark:opacity-70 hover:opacity-100 transition-opacity px-3 py-1.5 bg-white/5 dark:bg-black/10 rounded-full border border-white/10 dark:border-black/20 text-white dark:text-black"
                      >
                        ← Indietro
                      </button>
                    </div>
                    
                    {/* Form con effetto liquid glass */}
-                   <div className="space-y-4 bg-white/5 backdrop-blur-2xl rounded-[28px] p-6 border border-white/10 shadow-2xl">
+                   <div className="space-y-4 bg-white/5 dark:bg-black/10 backdrop-blur-2xl rounded-[28px] p-6 border border-white/10 dark:border-black/20 shadow-2xl transition-colors duration-500">
                      {isSignUp && (
                        <div className="space-y-2">
-                         <label className="text-[9px] font-black opacity-60 uppercase tracking-widest block px-1">Nickname</label>
+                         <label className="text-[9px] font-black opacity-60 dark:opacity-70 uppercase tracking-widest block px-1 text-white dark:text-black">Nickname</label>
                          <div className="relative">
                            <NicknameInput
                              value={signupNickname}
                              onChange={setSignupNickname}
                              placeholder="Il tuo nickname"
-                             className="w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-[20px] px-5 py-4 pr-12 font-bold focus:outline-none focus:border-red-600/50 focus:bg-white/15 transition-all duration-300 text-white placeholder:text-white/30 shadow-lg"
+                             className="w-full bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-black/30 rounded-[20px] px-5 py-4 pr-12 font-bold focus:outline-none focus:border-red-600/50 dark:focus:border-red-500/50 focus:bg-white/15 dark:focus:bg-black/25 transition-all duration-300 text-white dark:text-black placeholder:text-white/30 dark:placeholder:text-black/50 shadow-lg"
                            />
                          </div>
                        </div>
                      )}
                      
                      <div className="space-y-2">
-                       <label className="text-[9px] font-black opacity-60 uppercase tracking-widest block px-1">Email</label>
+                       <label className="text-[9px] font-black opacity-60 dark:opacity-70 uppercase tracking-widest block px-1 text-white dark:text-black">Email</label>
                        <EmailInput
                          value={email}
                          onChange={setEmail}
                          placeholder="tua@email.com"
-                         className="w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-[20px] px-5 py-4 font-bold focus:outline-none focus:border-red-600/50 focus:bg-white/15 transition-all duration-300 text-white placeholder:text-white/30 shadow-lg"
+                         className="w-full bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-black/30 rounded-[20px] px-5 py-4 font-bold focus:outline-none focus:border-red-600/50 dark:focus:border-red-500/50 focus:bg-white/15 dark:focus:bg-black/25 transition-all duration-300 text-white dark:text-black placeholder:text-white/30 dark:placeholder:text-black/50 shadow-lg"
                        />
                      </div>
                      
                      <div className="space-y-2">
-                       <label className="text-[9px] font-black opacity-60 uppercase tracking-widest block px-1">Password</label>
+                       <label className="text-[9px] font-black opacity-60 dark:opacity-70 uppercase tracking-widest block px-1 text-white dark:text-black">Password</label>
                        <input
                          type="password"
                          value={password}
                          onChange={(e) => setPassword(e.target.value)}
                          placeholder="••••••••"
-                         className="w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-[20px] px-5 py-4 font-bold focus:outline-none focus:border-red-600/50 focus:bg-white/15 transition-all duration-300 text-white placeholder:text-white/30 shadow-lg"
+                         className="w-full bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-black/30 rounded-[20px] px-5 py-4 font-bold focus:outline-none focus:border-red-600/50 dark:focus:border-red-500/50 focus:bg-white/15 dark:focus:bg-black/25 transition-all duration-300 text-white dark:text-black placeholder:text-white/30 dark:placeholder:text-black/50 shadow-lg"
                        />
                      </div>
                    </div>
@@ -713,7 +722,7 @@ const App: React.FC = () => {
                        }
                      }}
                      disabled={loading || !email || !password || (isSignUp && !signupNickname)}
-                     className="group relative w-full py-5 bg-gradient-to-br from-red-600 via-red-700 to-red-800 text-white rounded-[24px] font-black text-base flex items-center justify-center gap-3 active:scale-[0.97] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-2xl shadow-red-600/30 border border-red-500/30 overflow-hidden"
+                     className="group relative w-full py-5 bg-gradient-to-br from-red-600 via-red-700 to-red-800 dark:from-red-500 dark:via-red-600 dark:to-red-700 text-white rounded-[24px] font-black text-base flex items-center justify-center gap-3 active:scale-[0.97] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-2xl shadow-red-600/30 dark:shadow-red-500/30 border border-red-500/30 dark:border-red-400/30 overflow-hidden"
                    >
                      <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                      <span className="relative z-10">
@@ -723,7 +732,7 @@ const App: React.FC = () => {
                    
                    <button
                      onClick={() => setIsSignUp(!isSignUp)}
-                     className="w-full text-center text-[10px] font-black opacity-50 hover:opacity-100 transition-opacity py-2 px-4 rounded-full bg-white/5 border border-white/10 hover:bg-white/10"
+                     className="w-full text-center text-[10px] font-black opacity-50 dark:opacity-70 hover:opacity-100 transition-opacity py-2 px-4 rounded-full bg-white/5 dark:bg-black/10 border border-white/10 dark:border-black/20 hover:bg-white/10 dark:hover:bg-black/20 text-white dark:text-black"
                    >
                      {isSignUp ? 'Hai già un account? Accedi' : 'Non hai un account? Registrati'}
                    </button>
@@ -733,53 +742,53 @@ const App: React.FC = () => {
           ) : (
             <div className="space-y-6 mb-8">
               {/* Form profilo con effetto liquid glass */}
-              <div className="bg-white/5 backdrop-blur-2xl rounded-[32px] p-6 border border-white/10 shadow-2xl space-y-5">
+              <div className="bg-white/5 dark:bg-black/10 backdrop-blur-2xl rounded-[32px] p-6 border border-white/10 dark:border-black/20 shadow-2xl space-y-5 transition-colors duration-500">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black opacity-60 uppercase tracking-widest px-1">Nickname per gli amici</label>
+                  <label className="text-[10px] font-black opacity-60 dark:opacity-70 uppercase tracking-widest px-1 text-white dark:text-black">Nickname per gli amici</label>
                   <input 
                     type="text" 
                     value={nickname} 
                     onChange={(e) => setNickname(e.target.value)}
                     onBlur={saveProfile}
                     placeholder="Il tuo nickname..."
-                    className="w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-[20px] px-5 py-4 font-bold focus:outline-none focus:border-red-600/50 focus:bg-white/15 transition-all duration-300 text-white placeholder:text-white/30 shadow-lg"
+                    className="w-full bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-black/30 rounded-[20px] px-5 py-4 font-bold focus:outline-none focus:border-red-600/50 dark:focus:border-red-500/50 focus:bg-white/15 dark:focus:bg-black/25 transition-all duration-300 text-white dark:text-black placeholder:text-white/30 dark:placeholder:text-black/50 shadow-lg"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black opacity-60 uppercase tracking-widest px-1">La tua Bio</label>
+                  <label className="text-[10px] font-black opacity-60 dark:opacity-70 uppercase tracking-widest px-1 text-white dark:text-black">La tua Bio</label>
                   <textarea 
                     value={bio} 
                     onChange={(e) => setBio(e.target.value)}
                     onBlur={saveProfile}
                     placeholder="Scrivi qualcosa su di te..."
-                    className="w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-[20px] px-5 py-4 font-bold h-24 focus:outline-none focus:border-red-600/50 focus:bg-white/15 transition-all duration-300 text-white placeholder:text-white/30 resize-none shadow-lg"
+                    className="w-full bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-black/30 rounded-[20px] px-5 py-4 font-bold h-24 focus:outline-none focus:border-red-600/50 dark:focus:border-red-500/50 focus:bg-white/15 dark:focus:bg-black/25 transition-all duration-300 text-white dark:text-black placeholder:text-white/30 dark:placeholder:text-black/50 resize-none shadow-lg"
                   />
                 </div>
               </div>
 
               {/* Cerca amici con effetto glass */}
-              <div className="bg-white/5 backdrop-blur-2xl rounded-[32px] p-6 border border-white/10 shadow-2xl space-y-4">
-                <label className="text-[10px] font-black opacity-60 uppercase tracking-widest px-1 block">Cerca Amici</label>
+              <div className="bg-white/5 dark:bg-black/10 backdrop-blur-2xl rounded-[32px] p-6 border border-white/10 dark:border-black/20 shadow-2xl space-y-4 transition-colors duration-500">
+                <label className="text-[10px] font-black opacity-60 dark:opacity-70 uppercase tracking-widest px-1 block text-white dark:text-black">Cerca Amici</label>
                 <div className="relative">
-                  <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/40 z-10" />
+                  <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/40 dark:text-black/40 z-10" />
                   <input 
                     type="text" 
                     value={searchFriend}
                     onChange={(e) => setSearchFriend(e.target.value)}
                     placeholder="Nome amico..."
-                    className="w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-[20px] pl-14 pr-5 py-4 font-bold focus:outline-none focus:border-blue-600/50 focus:bg-white/15 transition-all duration-300 text-white placeholder:text-white/30 shadow-lg"
+                    className="w-full bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-black/30 rounded-[20px] pl-14 pr-5 py-4 font-bold focus:outline-none focus:border-blue-600/50 dark:focus:border-blue-500/50 focus:bg-white/15 dark:focus:bg-black/25 transition-all duration-300 text-white dark:text-black placeholder:text-white/30 dark:placeholder:text-black/50 shadow-lg"
                   />
                 </div>
                 {searchFriend && (
-                  <div className="space-y-2 bg-white/5 backdrop-blur-xl rounded-[20px] p-3 border border-white/10 animate-in fade-in slide-in-from-top-2 shadow-lg">
+                  <div className="space-y-2 bg-white/5 dark:bg-black/10 backdrop-blur-xl rounded-[20px] p-3 border border-white/10 dark:border-black/20 animate-in fade-in slide-in-from-top-2 shadow-lg transition-colors duration-500">
                     {loading ? (
-                      <p className="text-center py-4 text-[10px] font-black opacity-20 uppercase tracking-widest">Ricerca in corso...</p>
+                      <p className="text-center py-4 text-[10px] font-black opacity-20 dark:opacity-40 uppercase tracking-widest text-white dark:text-black">Ricerca in corso...</p>
                     ) : searchResults.length > 0 ? (
                       searchResults.map(user => {
                         const isCurrentUser = currentUserId && user.id === currentUserId;
                         
                         return (
-                          <div key={user.id} className="flex items-center justify-between p-3 hover:bg-white/5 rounded-xl transition-colors">
+                          <div key={user.id} className="flex items-center justify-between p-3 hover:bg-white/5 dark:hover:bg-black/10 rounded-xl transition-colors">
                             <div className="flex items-center gap-3 flex-1">
                               <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full flex items-center justify-center font-black text-sm overflow-hidden">
                                 {user.avatar_url ? (
@@ -820,26 +829,26 @@ const App: React.FC = () => {
           {!isGuest && (
             <div className="space-y-6 mb-6">
               {/* Statistiche principali */}
-              <div className="bg-white/5 backdrop-blur-2xl p-6 rounded-[32px] border border-white/10 shadow-2xl">
-                <h3 className="text-sm font-black uppercase italic tracking-tight mb-5 opacity-80">Statistiche Gioco</h3>
+              <div className="bg-white/5 dark:bg-black/10 backdrop-blur-2xl p-6 rounded-[32px] border border-white/10 dark:border-black/20 shadow-2xl transition-colors duration-500">
+                <h3 className="text-sm font-black uppercase italic tracking-tight mb-5 opacity-80 dark:opacity-90 text-white dark:text-black">Statistiche Gioco</h3>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gradient-to-br from-red-600/20 to-red-800/20 backdrop-blur-xl rounded-[24px] p-4 border border-red-500/20">
-                    <div className="text-[9px] font-black uppercase opacity-60 tracking-widest mb-1">Film Salvati</div>
-                    <div className="text-3xl font-black italic text-red-500">{likedMovies.length}</div>
+                  <div className="bg-gradient-to-br from-red-600/20 to-red-800/20 dark:from-red-500/30 dark:to-red-700/30 backdrop-blur-xl rounded-[24px] p-4 border border-red-500/20 dark:border-red-400/30 transition-colors duration-500">
+                    <div className="text-[9px] font-black uppercase opacity-60 dark:opacity-70 tracking-widest mb-1 text-white dark:text-black">Film Salvati</div>
+                    <div className="text-3xl font-black italic text-red-500 dark:text-red-600">{likedMovies.length}</div>
                   </div>
                   {userStats && (
                     <>
-                      <div className="bg-gradient-to-br from-green-600/20 to-green-800/20 backdrop-blur-xl rounded-[24px] p-4 border border-green-500/20">
-                        <div className="text-[9px] font-black uppercase opacity-60 tracking-widest mb-1">Match Trovati</div>
-                        <div className="text-3xl font-black italic text-green-500">{userStats.matches_found}</div>
+                      <div className="bg-gradient-to-br from-green-600/20 to-green-800/20 dark:from-green-500/30 dark:to-green-700/30 backdrop-blur-xl rounded-[24px] p-4 border border-green-500/20 dark:border-green-400/30 transition-colors duration-500">
+                        <div className="text-[9px] font-black uppercase opacity-60 dark:opacity-70 tracking-widest mb-1 text-white dark:text-black">Match Trovati</div>
+                        <div className="text-3xl font-black italic text-green-500 dark:text-green-600">{userStats.matches_found}</div>
                       </div>
-                      <div className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 backdrop-blur-xl rounded-[24px] p-4 border border-purple-500/20">
-                        <div className="text-[9px] font-black uppercase opacity-60 tracking-widest mb-1">Stanze Create</div>
-                        <div className="text-3xl font-black italic text-purple-500">{userStats.rooms_created}</div>
+                      <div className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 dark:from-purple-500/30 dark:to-purple-700/30 backdrop-blur-xl rounded-[24px] p-4 border border-purple-500/20 dark:border-purple-400/30 transition-colors duration-500">
+                        <div className="text-[9px] font-black uppercase opacity-60 dark:opacity-70 tracking-widest mb-1 text-white dark:text-black">Stanze Create</div>
+                        <div className="text-3xl font-black italic text-purple-500 dark:text-purple-600">{userStats.rooms_created}</div>
                       </div>
-                      <div className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-xl rounded-[24px] p-4 border border-blue-500/20">
-                        <div className="text-[9px] font-black uppercase opacity-60 tracking-widest mb-1">Stanze Unite</div>
-                        <div className="text-3xl font-black italic text-blue-500">{userStats.rooms_joined}</div>
+                      <div className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 dark:from-blue-500/30 dark:to-blue-700/30 backdrop-blur-xl rounded-[24px] p-4 border border-blue-500/20 dark:border-blue-400/30 transition-colors duration-500">
+                        <div className="text-[9px] font-black uppercase opacity-60 dark:opacity-70 tracking-widest mb-1 text-white dark:text-black">Stanze Unite</div>
+                        <div className="text-3xl font-black italic text-blue-500 dark:text-blue-600">{userStats.rooms_joined}</div>
                       </div>
                     </>
                   )}
@@ -861,25 +870,25 @@ const App: React.FC = () => {
                   .slice(0, 5);
                 
                 return (
-                  <div className="bg-white/5 backdrop-blur-2xl p-6 rounded-[32px] border border-white/10 shadow-2xl">
-                    <h3 className="text-sm font-black uppercase italic tracking-tight mb-5 opacity-80">Generi Preferiti</h3>
+                  <div className="bg-white/5 dark:bg-black/10 backdrop-blur-2xl p-6 rounded-[32px] border border-white/10 dark:border-black/20 shadow-2xl transition-colors duration-500">
+                    <h3 className="text-sm font-black uppercase italic tracking-tight mb-5 opacity-80 dark:opacity-90 text-white dark:text-black">Generi Preferiti</h3>
                     <div className="space-y-3">
                       {topGenres.map(([genre, count], index) => (
                         <div key={genre} className="flex items-center justify-between">
                           <div className="flex items-center gap-3 flex-1">
-                            <div className="w-8 h-8 bg-gradient-to-br from-red-600/30 to-purple-600/30 rounded-full flex items-center justify-center text-xs font-black">
+                            <div className="w-8 h-8 bg-gradient-to-br from-red-600/30 to-purple-600/30 dark:from-red-500/40 dark:to-purple-500/40 rounded-full flex items-center justify-center text-xs font-black text-white dark:text-black">
                               {index + 1}
                             </div>
-                            <span className="font-bold text-sm">{genre}</span>
+                            <span className="font-bold text-sm text-white dark:text-black">{genre}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <div className="w-24 h-2 bg-white/5 rounded-full overflow-hidden">
+                            <div className="w-24 h-2 bg-white/5 dark:bg-black/20 rounded-full overflow-hidden">
                               <div 
-                                className="h-full bg-gradient-to-r from-red-600 to-purple-600 rounded-full transition-all duration-500"
+                                className="h-full bg-gradient-to-r from-red-600 to-purple-600 dark:from-red-500 dark:to-purple-500 rounded-full transition-all duration-500"
                                 style={{ width: `${(count / likedMovies.length) * 100}%` }}
                               />
                             </div>
-                            <span className="text-xs font-black opacity-60 w-8 text-right">{count}</span>
+                            <span className="text-xs font-black opacity-60 dark:opacity-70 w-8 text-right text-white dark:text-black">{count}</span>
                           </div>
                         </div>
                       ))}
@@ -890,11 +899,11 @@ const App: React.FC = () => {
 
               {/* Film recenti */}
               {likedMovies.length > 0 && (
-                <div className="bg-white/5 backdrop-blur-2xl p-6 rounded-[32px] border border-white/10 shadow-2xl">
-                  <h3 className="text-sm font-black uppercase italic tracking-tight mb-5 opacity-80">Film Recenti</h3>
+                <div className="bg-white/5 dark:bg-black/10 backdrop-blur-2xl p-6 rounded-[32px] border border-white/10 dark:border-black/20 shadow-2xl transition-colors duration-500">
+                  <h3 className="text-sm font-black uppercase italic tracking-tight mb-5 opacity-80 dark:opacity-90 text-white dark:text-black">Film Recenti</h3>
                   <div className="grid grid-cols-3 gap-3">
                     {likedMovies.slice(0, 6).map(movie => (
-                      <div key={movie.id} className="relative aspect-[2/3] rounded-[16px] overflow-hidden border border-white/10 group">
+                      <div key={movie.id} className="relative aspect-[2/3] rounded-[16px] overflow-hidden border border-white/10 dark:border-black/20 group transition-colors duration-500">
                         {movie.poster ? (
                           <img 
                             src={movie.poster} 
@@ -928,25 +937,25 @@ const App: React.FC = () => {
                 const progress = (totalPoints % 100);
                 
                 return (
-                  <div className="bg-gradient-to-br from-red-600/20 via-purple-700/20 to-indigo-800/20 backdrop-blur-2xl p-6 rounded-[32px] border border-white/10 shadow-2xl">
-                    <h3 className="text-sm font-black uppercase italic tracking-tight mb-5 opacity-80">Livello Cinefilo</h3>
+                  <div className="bg-gradient-to-br from-red-600/20 via-purple-700/20 to-indigo-800/20 dark:from-red-500/30 dark:via-purple-600/30 dark:to-indigo-700/30 backdrop-blur-2xl p-6 rounded-[32px] border border-white/10 dark:border-black/20 shadow-2xl transition-colors duration-500">
+                    <h3 className="text-sm font-black uppercase italic tracking-tight mb-5 opacity-80 dark:opacity-90 text-white dark:text-black">Livello Cinefilo</h3>
                     <div className="space-y-4">
                       <div className="text-center">
-                        <div className="text-5xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-purple-600 to-indigo-600">
+                        <div className="text-5xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-purple-600 to-indigo-600 dark:from-red-500 dark:via-purple-500 dark:to-indigo-500">
                           {level}
                         </div>
-                        <div className="text-[10px] font-black uppercase opacity-60 tracking-widest mt-1">
+                        <div className="text-[10px] font-black uppercase opacity-60 dark:opacity-70 tracking-widest mt-1 text-white dark:text-black">
                           {totalPoints} Punti Totali
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <div className="flex justify-between text-[9px] font-black uppercase opacity-60">
+                        <div className="flex justify-between text-[9px] font-black uppercase opacity-60 dark:opacity-70 text-white dark:text-black">
                           <span>Progresso al livello {level + 1}</span>
                           <span>{progress}/100</span>
                         </div>
-                        <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden">
+                        <div className="w-full h-3 bg-white/5 dark:bg-black/20 rounded-full overflow-hidden">
                           <div 
-                            className="h-full bg-gradient-to-r from-red-600 via-purple-600 to-indigo-600 rounded-full transition-all duration-500"
+                            className="h-full bg-gradient-to-r from-red-600 via-purple-600 to-indigo-600 dark:from-red-500 dark:via-purple-500 dark:to-indigo-500 rounded-full transition-all duration-500"
                             style={{ width: `${progress}%` }}
                           />
                         </div>
@@ -957,10 +966,10 @@ const App: React.FC = () => {
               })()}
 
               {/* Stato Account */}
-              <div className="bg-white/5 backdrop-blur-2xl p-6 rounded-[32px] border border-white/10 shadow-2xl">
+              <div className="bg-white/5 dark:bg-black/10 backdrop-blur-2xl p-6 rounded-[32px] border border-white/10 dark:border-black/20 shadow-2xl transition-colors duration-500">
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black uppercase opacity-60 tracking-widest">Stato Account</span>
-                  <span className="font-black text-[10px] uppercase px-4 py-2 rounded-full bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-600/30 border border-red-500/30">
+                  <span className="text-[10px] font-black uppercase opacity-60 dark:opacity-70 tracking-widest text-white dark:text-black">Stato Account</span>
+                  <span className="font-black text-[10px] uppercase px-4 py-2 rounded-full bg-gradient-to-r from-red-600 to-red-700 dark:from-red-500 dark:to-red-600 text-white shadow-lg shadow-red-600/30 dark:shadow-red-500/30 border border-red-500/30 dark:border-red-400/30">
                     Premium
                   </span>
                 </div>
@@ -975,7 +984,7 @@ const App: React.FC = () => {
                 setIsGuest(true);
                 setActiveTab('home');
               }}
-              className="w-full py-4 text-center text-red-600 font-black uppercase text-[10px] tracking-[0.2em] opacity-40 hover:opacity-100 transition-opacity"
+              className="w-full py-4 text-center text-red-600 dark:text-red-500 font-black uppercase text-[10px] tracking-[0.2em] opacity-40 dark:opacity-60 hover:opacity-100 transition-opacity"
              >
                Esci dall'account
              </HapticButton>
@@ -989,7 +998,7 @@ const App: React.FC = () => {
     <div className="h-screen w-screen relative overflow-hidden flex flex-col bg-black dark:bg-white transition-colors duration-500">
       <main className="flex-1 relative overflow-hidden">{renderContent()}</main>
       {!isSessionActive && !roomViewMode && (
-        <nav className="fixed bottom-0 left-0 right-0 h-20 bg-black/80 ios-blur border-t border-white/5 flex items-center justify-around px-8 pb-2 z-[90]">
+        <nav className="fixed bottom-0 left-0 right-0 h-20 bg-black/80 dark:bg-white/90 ios-blur border-t border-white/5 dark:border-black/10 flex items-center justify-around px-8 pb-2 z-[90] transition-colors duration-500">
           <TabButton active={activeTab === 'home'} onClick={() => setActiveTab('home')} icon={<Home size={22} />} label="Home" />
           <TabButton active={activeTab === 'playlist'} onClick={() => setActiveTab('playlist')} icon={<Bookmark size={22} />} label="Match" />
           <TabButton active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} icon={<UserIcon size={22} />} label="Profilo" />
@@ -1003,9 +1012,9 @@ const TabButton: React.FC<{ active: boolean, onClick: () => void, icon: React.Re
   <HapticButton 
     impact="light"
     onClick={onClick}
-    className={`flex flex-col items-center gap-1 transition-all duration-300 ${active ? 'text-red-600 scale-105' : 'text-white/20'}`}
+    className={`flex flex-col items-center gap-1 transition-all duration-300 ${active ? 'text-red-600 dark:text-red-500 scale-105' : 'text-white/20 dark:text-black/30'}`}
   >
-    {icon}<span className="text-[9px] font-black uppercase tracking-[0.1em]">{label}</span>
+    {icon}<span className={`text-[9px] font-black uppercase tracking-[0.1em] ${active ? 'text-red-600 dark:text-red-500' : 'text-white/20 dark:text-black/30'}`}>{label}</span>
   </HapticButton>
 );
 

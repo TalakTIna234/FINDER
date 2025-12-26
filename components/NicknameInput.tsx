@@ -62,7 +62,7 @@ export const NicknameInput: React.FC<NicknameInputProps> = ({ value, onChange, p
       {value && value.length >= 2 && (
         <div className="absolute right-3 top-1/2 -translate-y-1/2">
           {isChecking ? (
-            <Loader2 className="w-5 h-5 text-white/40 animate-spin" />
+            <Loader2 className="w-5 h-5 text-white/40 dark:text-black/40 animate-spin" />
           ) : isAvailable === true ? (
             <Check className="w-5 h-5 text-green-500" />
           ) : isAvailable === false ? (

@@ -147,13 +147,13 @@ export const EmailInput: React.FC<EmailInputProps> = ({ value, onChange, placeho
                 key={suggestion}
                 type="button"
                 onClick={() => handleSuggestionClick(suggestion)}
-                className={`w-full text-left px-4 py-3 hover:bg-white/10 transition-colors ${
-                  index === selectedIndex ? 'bg-white/10' : ''
+                className={`w-full text-left px-4 py-3 hover:bg-white/10 dark:hover:bg-black/10 transition-colors ${
+                  index === selectedIndex ? 'bg-white/10 dark:bg-black/10' : ''
                 }`}
               >
-                <span className="text-white font-bold">{local}@</span>
-                <span className="text-blue-400 font-bold">{domainName}</span>
-                <span className="text-white/60">.{ext}</span>
+                <span className="text-white dark:text-black font-bold">{local}@</span>
+                <span className="text-blue-400 dark:text-blue-600 font-bold">{domainName}</span>
+                <span className="text-white/60 dark:text-black/60">.{ext}</span>
               </button>
             );
           })}

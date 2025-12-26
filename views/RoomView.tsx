@@ -101,12 +101,32 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       
       let movies: Movie[] = [];
       try {
+        // Aggiungi timeout specifico per la chiamata TMDB (20 secondi)
+        const tmdbTimeout = setTimeout(() => {
+          console.error('[1/4] TMDB call timeout after 20 seconds');
+        }, 20000);
+        
         movies = await movieService.discoverByGenre(genreId);
+        clearTimeout(tmdbTimeout);
       } catch (movieError) {
         clearTimeout(timeoutId);
         console.error('[1/4] Error loading movies:', movieError);
         const errorMsg = movieError instanceof Error ? movieError.message : 'Errore sconosciuto';
-        alert(`Errore nel caricamento dei film: ${errorMsg}\n\nVerifica che:\n1. Il token TMDB sia configurato correttamente\n2. La connessione internet sia attiva\n3. Controlla la console per dettagli.`);
+        
+        // Messaggio di errore più specifico
+        let userMessage = `Errore nel caricamento dei film: ${errorMsg}\n\n`;
+        
+        if (errorMsg.includes('Token') || errorMsg.includes('autenticazione')) {
+          userMessage += 'Il token TMDB non è valido o non è configurato.\nVerifica la variabile d\'ambiente VITE_TMDB_ACCESS_TOKEN.';
+        } else if (errorMsg.includes('Timeout')) {
+          userMessage += 'La chiamata a TMDB sta impiegando troppo tempo.\nVerifica la connessione internet e riprova.';
+        } else if (errorMsg.includes('Nessun film trovato')) {
+          userMessage += 'Nessun film disponibile per questo genere.\nProva con un altro genere.';
+        } else {
+          userMessage += 'Verifica che:\n1. Il token TMDB sia configurato correttamente\n2. La connessione internet sia attiva\n3. Controlla la console per dettagli.';
+        }
+        
+        alert(userMessage);
         setLoading(false);
         return;
       }
@@ -408,25 +428,25 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
 
   if (loading) {
     return (
-      <div className="h-full flex flex-col items-center justify-center space-y-8 bg-black">
+      <div className="h-full flex flex-col items-center justify-center space-y-8 bg-black dark:bg-white transition-colors duration-500">
         <div className="relative">
-            <div className="w-20 h-20 border-4 border-white/5 border-t-red-600 rounded-full animate-spin"></div>
+            <div className="w-20 h-20 border-4 border-white/5 dark:border-black/10 border-t-red-600 dark:border-t-red-500 rounded-full animate-spin transition-colors duration-500"></div>
             <div className="absolute inset-0 flex items-center justify-center animate-pulse">
-                <Sparkles size={24} className="text-red-500" />
+                <Sparkles size={24} className="text-red-500 dark:text-red-600" />
             </div>
         </div>
-        <p className="font-black text-xs uppercase tracking-[0.4em] opacity-30">Discovery in corso...</p>
+        <p className="font-black text-xs uppercase tracking-[0.4em] opacity-30 dark:opacity-60 text-white dark:text-black transition-opacity duration-500">Discovery in corso...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full px-6 pt-16 bg-black text-white">
+    <div className="flex flex-col h-full px-6 pt-16 bg-black dark:bg-white text-white dark:text-black transition-colors duration-500">
       <header className="flex items-center gap-4 mb-10">
-        <HapticButton onClick={onBack} className="p-3 bg-white/5 rounded-full border border-white/10 active:bg-white/10">
-          <ChevronLeft />
+        <HapticButton onClick={onBack} className="p-3 bg-white/5 dark:bg-black/10 rounded-full border border-white/10 dark:border-black/20 active:bg-white/10 dark:active:bg-black/20 transition-colors duration-500">
+          <ChevronLeft className="text-white dark:text-black" />
         </HapticButton>
-        <h1 className="text-2xl font-black italic tracking-tight uppercase">
+        <h1 className="text-2xl font-black italic tracking-tight uppercase text-white dark:text-black transition-colors duration-500">
           {step === 'lobby' ? 'Lobby Stanza' : step === 'code' ? 'Entra in Stanza' : 'Configurazione'}
         </h1>
       </header>
@@ -435,12 +455,12 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         <div className="flex flex-col gap-5">
            <HapticButton 
             onClick={() => setStep('genre')}
-            className="p-8 bg-[#1C1C1E] rounded-[40px] border border-white/10 flex items-center gap-6 active:scale-[0.97] transition-all"
+            className="p-8 bg-[#1C1C1E] dark:bg-gray-100 rounded-[40px] border border-white/10 dark:border-black/20 flex items-center gap-6 active:scale-[0.97] transition-all"
            >
-              <div className="p-5 bg-gradient-to-br from-purple-600 to-indigo-700 rounded-3xl text-white shadow-xl"><Wand2 size={32}/></div>
+              <div className="p-5 bg-gradient-to-br from-purple-600 to-indigo-700 dark:from-purple-500 dark:to-indigo-600 rounded-3xl text-white shadow-xl transition-colors duration-500"><Wand2 size={32}/></div>
               <div className="text-left flex-1">
-                <h3 className="text-xl font-black italic uppercase tracking-tight">Per Genere</h3>
-                <p className="text-[10px] font-bold opacity-30 mt-1 uppercase tracking-widest">Discovery rapida</p>
+                <h3 className="text-xl font-black italic uppercase tracking-tight text-white dark:text-black">Per Genere</h3>
+                <p className="text-[10px] font-bold opacity-30 dark:opacity-60 mt-1 uppercase tracking-widest text-white dark:text-black">Discovery rapida</p>
               </div>
            </HapticButton>
 
@@ -453,10 +473,10 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
             }}
             className="p-8 bg-[#1C1C1E] rounded-[40px] border border-white/10 flex items-center gap-6 active:scale-[0.97] transition-all"
            >
-              <div className="p-5 bg-gradient-to-br from-blue-600 to-cyan-700 rounded-3xl text-white shadow-xl"><List size={32}/></div>
+              <div className="p-5 bg-gradient-to-br from-blue-600 to-cyan-700 dark:from-blue-500 dark:to-cyan-600 rounded-3xl text-white shadow-xl transition-colors duration-500"><List size={32}/></div>
               <div className="text-left flex-1">
-                <h3 className="text-xl font-black italic uppercase tracking-tight">Manuale</h3>
-                <p className="text-[10px] font-bold opacity-30 mt-1 uppercase tracking-widest">Cerca e seleziona</p>
+                <h3 className="text-xl font-black italic uppercase tracking-tight text-white dark:text-black">Manuale</h3>
+                <p className="text-[10px] font-bold opacity-30 dark:opacity-60 mt-1 uppercase tracking-widest text-white dark:text-black">Cerca e seleziona</p>
               </div>
            </HapticButton>
         </div>
@@ -576,7 +596,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
               }
             }}
             disabled={roomCode.length !== 6 || loading}
-            className="w-full py-6 bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 text-white rounded-[32px] font-black text-xl italic uppercase tracking-widest shadow-2xl shadow-blue-600/30 active:scale-[0.96] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            className="w-full py-6 bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 dark:from-blue-500 dark:via-indigo-600 dark:to-purple-700 text-white rounded-[32px] font-black text-xl italic uppercase tracking-widest shadow-2xl shadow-blue-600/30 dark:shadow-blue-500/30 active:scale-[0.96] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
           >
             {loading ? 'Caricamento...' : 'Entra in Stanza'}
           </HapticButton>
@@ -603,13 +623,13 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
           {/* Barra di ricerca con dropdown */}
           <div className="space-y-4 relative">
             <div className="relative">
-              <Search size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/40 z-10" />
+              <Search size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/40 dark:text-black/40 z-10" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cerca film... (ricerca automatica)"
-                className="w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-[24px] pl-14 pr-5 py-4 font-bold text-sm focus:outline-none focus:border-red-600/50 focus:bg-white/15 transition-all duration-300 text-white placeholder:text-white/30 shadow-lg"
+                className="w-full bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-black/30 rounded-[24px] pl-14 pr-5 py-4 font-bold text-sm focus:outline-none focus:border-red-600/50 dark:focus:border-red-500/50 focus:bg-white/15 dark:focus:bg-black/25 transition-all duration-300 text-white dark:text-black placeholder:text-white/30 dark:placeholder:text-black/50 shadow-lg"
               />
               {isSearching && (
                 <div className="absolute right-5 top-1/2 -translate-y-1/2">
@@ -713,7 +733,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
           <HapticButton
             onClick={handleCreateManualRoom}
             disabled={manualMovies.length === 0 || loading}
-            className="w-full py-6 bg-gradient-to-br from-red-600 via-purple-700 to-indigo-800 text-white rounded-[32px] font-black text-xl italic uppercase tracking-widest shadow-2xl shadow-purple-600/30 disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.96] transition-all"
+            className="w-full py-6 bg-gradient-to-br from-red-600 via-purple-700 to-indigo-800 dark:from-red-500 dark:via-purple-600 dark:to-indigo-700 text-white rounded-[32px] font-black text-xl italic uppercase tracking-widest shadow-2xl shadow-purple-600/30 dark:shadow-purple-500/30 disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.96] transition-all"
           >
             {loading ? 'Creazione...' : `Crea Stanza (${manualMovies.length} film)`}
           </HapticButton>
@@ -763,7 +783,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
           <footer>
             <HapticButton 
               onClick={startSession}
-              className="group w-full py-6 bg-gradient-to-br from-red-600 via-purple-700 to-indigo-800 text-white rounded-[32px] font-black text-xl italic uppercase tracking-widest shadow-2xl shadow-purple-600/30 active:scale-[0.96] transition-all relative overflow-hidden"
+              className="group w-full py-6 bg-gradient-to-br from-red-600 via-purple-700 to-indigo-800 dark:from-red-500 dark:via-purple-600 dark:to-indigo-700 text-white rounded-[32px] font-black text-xl italic uppercase tracking-widest shadow-2xl shadow-purple-600/30 dark:shadow-purple-500/30 active:scale-[0.96] transition-all relative overflow-hidden"
             >
               <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-10 transition-opacity" />
               <div className="flex items-center justify-center gap-3 relative z-10">

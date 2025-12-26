@@ -50,10 +50,10 @@ const MovieCard: React.FC<CardProps> = ({ movie, onSwipe, isFront, onShowDetails
       <motion.div style={{ opacity: passOpacity }} className="absolute top-12 right-12 border-8 border-red-500 rounded-2xl px-6 py-3 rotate-[15deg] pointer-events-none z-20 bg-red-500/10 backdrop-blur-sm">
         <span className="text-red-500 font-black text-5xl uppercase tracking-tighter">NO</span>
       </motion.div>
-      <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black via-black/80 to-transparent pt-32">
-        <h2 className="text-3xl font-black text-white leading-tight mb-1">{movie.title}</h2>
+      <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black via-black/80 to-transparent dark:from-white dark:via-white/80 pt-32 transition-colors duration-500">
+        <h2 className="text-3xl font-black text-white dark:text-black leading-tight mb-1 transition-colors duration-500">{movie.title}</h2>
         <div className="flex items-center gap-3">
-          <p className="text-white/60 font-bold">{movie.year}</p>
+          <p className="text-white/60 dark:text-black/60 font-bold transition-colors duration-500">{movie.year}</p>
           <div className="bg-yellow-400/90 backdrop-blur px-2 py-0.5 rounded-lg text-black font-black text-[10px]">★ {movie.rating}</div>
         </div>
       </div>
@@ -129,7 +129,7 @@ export const CardStack: React.FC<{ movies: Movie[], onFinish: (finalMovies: Movi
 
   if (winner) {
     return (
-      <div className="fixed inset-0 bg-black flex flex-col items-center overflow-hidden pb-12 pt-16 px-6">
+      <div className="fixed inset-0 bg-black dark:bg-white flex flex-col items-center overflow-hidden pb-12 pt-16 px-6 transition-colors duration-500">
         <motion.div 
           initial={{ y: 20, opacity: 0 }} 
           animate={{ y: 0, opacity: 1 }}
@@ -138,14 +138,14 @@ export const CardStack: React.FC<{ movies: Movie[], onFinish: (finalMovies: Movi
           <div className="w-16 h-16 bg-yellow-500 rounded-full flex items-center justify-center mx-auto mb-3 shadow-2xl shadow-yellow-500/40">
             <Trophy size={32} className="text-black" />
           </div>
-          <h1 className="text-3xl font-black italic tracking-tighter uppercase text-white leading-none">Match Finale!</h1>
-          <p className="text-white/40 font-bold uppercase tracking-widest text-[9px] mt-1">Stasera si guarda questo capolavoro</p>
+          <h1 className="text-3xl font-black italic tracking-tighter uppercase text-white dark:text-black leading-none transition-colors duration-500">Match Finale!</h1>
+          <p className="text-white/40 dark:text-black/60 font-bold uppercase tracking-widest text-[9px] mt-1 transition-opacity duration-500">Stasera si guarda questo capolavoro</p>
         </motion.div>
         
         <motion.div 
           initial={{ scale: 0.95, opacity: 0 }} 
           animate={{ scale: 1, opacity: 1 }} 
-          className="flex-1 w-full max-w-sm flex flex-col min-h-0 bg-[#1C1C1E] rounded-[48px] overflow-hidden border border-white/10 shadow-2xl"
+          className="flex-1 w-full max-w-sm flex flex-col min-h-0 bg-[#1C1C1E] dark:bg-gray-100 rounded-[48px] overflow-hidden border border-white/10 dark:border-black/20 shadow-2xl transition-colors duration-500"
         >
           <div className="relative flex-1 overflow-hidden">
              <img 
@@ -166,7 +166,7 @@ export const CardStack: React.FC<{ movies: Movie[], onFinish: (finalMovies: Movi
         <div className="w-full max-w-sm mt-8">
           <HapticButton 
             onClick={() => onFinish([winner])}
-            className="w-full py-5 bg-gradient-to-r from-red-600 via-purple-600 to-indigo-600 text-white rounded-3xl font-black text-xl flex items-center justify-center gap-3 shadow-2xl active:scale-95 transition-all"
+            className="w-full py-5 bg-gradient-to-r from-red-600 via-purple-600 to-indigo-600 dark:from-red-500 dark:via-purple-500 dark:to-indigo-500 text-white rounded-3xl font-black text-xl flex items-center justify-center gap-3 shadow-2xl active:scale-95 transition-all"
           >
             <CheckCircle2 size={24} /> Chiudi Sessione
           </HapticButton>
@@ -176,12 +176,12 @@ export const CardStack: React.FC<{ movies: Movie[], onFinish: (finalMovies: Movi
   }
 
   return (
-    <div className="relative w-full h-full flex flex-col items-center justify-center bg-black overflow-hidden">
+    <div className="relative w-full h-full flex flex-col items-center justify-center bg-black dark:bg-white overflow-hidden transition-colors duration-500">
       <header className="absolute top-16 z-50 flex flex-col items-center gap-1">
-        <div className="bg-white/10 ios-blur px-5 py-1.5 rounded-full border border-white/10">
-          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/90">Round {round} • Eliminazione</span>
+        <div className="bg-white/10 dark:bg-black/10 ios-blur px-5 py-1.5 rounded-full border border-white/10 dark:border-black/20 transition-colors duration-500">
+          <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white/90 dark:text-black/90">Round {round} • Eliminazione</span>
         </div>
-        <p className="text-[9px] text-white/20 font-black uppercase tracking-widest">
+        <p className="text-[9px] text-white/20 dark:text-black/30 font-black uppercase tracking-widest transition-opacity duration-500">
            Film {currentIndex + 1} di {currentRoundMovies.length}
         </p>
       </header>
@@ -204,7 +204,7 @@ export const CardStack: React.FC<{ movies: Movie[], onFinish: (finalMovies: Movi
         <HapticButton 
           impact="heavy"
           onClick={() => handleSwipe('left')}
-          className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-red-500 shadow-xl active:bg-red-500/10"
+          className="w-16 h-16 rounded-full bg-white/5 dark:bg-black/10 border border-white/10 dark:border-black/20 flex items-center justify-center text-red-500 dark:text-red-600 shadow-xl active:bg-red-500/10 dark:active:bg-red-600/20 transition-colors duration-500"
         >
           <X size={32} strokeWidth={3} />
         </HapticButton>
@@ -212,7 +212,7 @@ export const CardStack: React.FC<{ movies: Movie[], onFinish: (finalMovies: Movi
         <HapticButton 
           impact="heavy"
           onClick={() => handleSwipe('up')}
-          className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-xl scale-125 ring-4 ring-black"
+          className="w-16 h-16 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white shadow-xl scale-125 ring-4 ring-black dark:ring-white transition-colors duration-500"
         >
           <Star size={32} fill="currentColor" strokeWidth={0} />
         </HapticButton>
@@ -220,7 +220,7 @@ export const CardStack: React.FC<{ movies: Movie[], onFinish: (finalMovies: Movi
         <HapticButton 
           impact="heavy"
           onClick={() => handleSwipe('right')}
-          className="w-16 h-16 rounded-full bg-green-500 flex items-center justify-center text-white shadow-xl active:bg-green-400"
+          className="w-16 h-16 rounded-full bg-green-500 dark:bg-green-600 flex items-center justify-center text-white shadow-xl active:bg-green-400 dark:active:bg-green-500 transition-colors duration-500"
         >
           <Heart size={32} fill="currentColor" strokeWidth={0} />
         </HapticButton>
@@ -237,8 +237,8 @@ export const CardStack: React.FC<{ movies: Movie[], onFinish: (finalMovies: Movi
           >
              <div className="p-10 bg-gradient-to-br from-green-500 to-emerald-700 rounded-[50px] shadow-2xl border-4 border-white/30 transform -rotate-6">
                 <Sparkles className="absolute -top-6 -right-6 text-yellow-300 animate-pulse" size={50} />
-                <h2 className="text-6xl font-black italic tracking-tighter text-white uppercase mb-1">MATCH!</h2>
-                <p className="text-white font-black text-center uppercase tracking-widest text-[10px] opacity-80">Ottima scelta!</p>
+                <h2 className="text-6xl font-black italic tracking-tighter text-white dark:text-black uppercase mb-1 transition-colors duration-500">MATCH!</h2>
+                <p className="text-white dark:text-black font-black text-center uppercase tracking-widest text-[10px] opacity-80 dark:opacity-90 transition-opacity duration-500">Ottima scelta!</p>
              </div>
           </motion.div>
         )}
@@ -251,7 +251,7 @@ export const CardStack: React.FC<{ movies: Movie[], onFinish: (finalMovies: Movi
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-0 z-[200] bg-black overflow-y-auto"
+            className="fixed inset-0 z-[200] bg-black dark:bg-white overflow-y-auto transition-colors duration-500"
           >
             {!showTrailerInApp ? (
               <div className="pb-12">
@@ -263,10 +263,10 @@ export const CardStack: React.FC<{ movies: Movie[], onFinish: (finalMovies: Movi
                       e.currentTarget.src = `https://placehold.co/500x750/1c1c1e/white?text=${encodeURIComponent(selectedMovie.title)}`;
                     }}
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent dark:from-white dark:via-white/40 transition-colors duration-500" />
                   <HapticButton 
                     onClick={() => setSelectedMovie(null)}
-                    className="absolute top-12 right-6 p-2 bg-black/40 rounded-full text-white"
+                    className="absolute top-12 right-6 p-2 bg-black/40 dark:bg-white/40 rounded-full text-white dark:text-black transition-colors duration-500"
                   >
                     <ChevronDown size={32} />
                   </HapticButton>
@@ -283,13 +283,13 @@ export const CardStack: React.FC<{ movies: Movie[], onFinish: (finalMovies: Movi
 
                   <div className="flex gap-2 flex-wrap">
                     {detailedMovie?.genres?.map(g => (
-                      <span key={g} className="px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold uppercase tracking-[0.1em] text-white/70">{g}</span>
+                      <span key={g} className="px-3 py-1 bg-white/10 dark:bg-black/10 rounded-full text-[10px] font-bold uppercase tracking-[0.1em] text-white/70 dark:text-black/70 transition-colors duration-500">{g}</span>
                     ))}
                   </div>
 
                   <div className="space-y-2">
-                     <h3 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40">Trama</h3>
-                     <p className="text-white/70 leading-relaxed font-medium text-sm">
+                     <h3 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-40 dark:opacity-60 text-white dark:text-black transition-opacity duration-500">Trama</h3>
+                     <p className="text-white/70 dark:text-black/70 leading-relaxed font-medium text-sm transition-colors duration-500">
                        {detailedMovie?.overview || selectedMovie.overview}
                      </p>
                   </div>
@@ -297,7 +297,7 @@ export const CardStack: React.FC<{ movies: Movie[], onFinish: (finalMovies: Movi
                   {detailedMovie?.trailerKey && (
                     <HapticButton 
                       onClick={() => setShowTrailerInApp(true)}
-                      className="w-full py-5 bg-red-600 text-white rounded-3xl font-black text-xl flex items-center justify-center gap-3 shadow-2xl shadow-red-600/30"
+                      className="w-full py-5 bg-red-600 dark:bg-red-500 text-white rounded-3xl font-black text-xl flex items-center justify-center gap-3 shadow-2xl shadow-red-600/30 dark:shadow-red-500/30 transition-colors duration-500"
                     >
                       <PlayCircle size={28} /> Guarda Trailer ITA
                     </HapticButton>
@@ -305,12 +305,12 @@ export const CardStack: React.FC<{ movies: Movie[], onFinish: (finalMovies: Movi
                 </div>
               </div>
             ) : (
-              <div className="h-full flex flex-col bg-black">
-                <div className="pt-16 pb-4 px-6 flex justify-between items-center bg-black sticky top-0 z-50 border-b border-white/5">
-                   <h3 className="font-black italic uppercase text-[10px] tracking-widest truncate max-w-[60%] text-white/40">{selectedMovie.title}</h3>
+              <div className="h-full flex flex-col bg-black dark:bg-white transition-colors duration-500">
+                <div className="pt-16 pb-4 px-6 flex justify-between items-center bg-black dark:bg-white sticky top-0 z-50 border-b border-white/5 dark:border-black/10 transition-colors duration-500">
+                   <h3 className="font-black italic uppercase text-[10px] tracking-widest truncate max-w-[60%] text-white/40 dark:text-black/60">{selectedMovie.title}</h3>
                    <HapticButton 
                     onClick={() => setShowTrailerInApp(false)}
-                    className="text-red-500 font-black uppercase text-[10px] tracking-widest px-5 py-2.5 bg-white/5 rounded-full border border-white/10"
+                    className="text-red-500 dark:text-red-600 font-black uppercase text-[10px] tracking-widest px-5 py-2.5 bg-white/5 dark:bg-black/10 rounded-full border border-white/10 dark:border-black/20 transition-colors duration-500"
                    >
                      CHIUDI
                    </HapticButton>

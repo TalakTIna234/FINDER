@@ -63,39 +63,39 @@ export const HomeView: React.FC<Props> = ({ onCreateRoom, onJoinRoom, toggleThem
         <HapticButton 
           onClick={onCreateRoom}
           impact="heavy"
-          className="group relative w-full p-6 rounded-[32px] border bg-[#1C1C1E] border-white/10 ios-card-shadow active:scale-[0.96] shadow-2xl shadow-red-600/10 transition-all duration-300"
+          className="group relative w-full p-6 rounded-[32px] border bg-[#1C1C1E] dark:bg-white border-white/10 dark:border-black/20 ios-card-shadow active:scale-[0.96] shadow-2xl shadow-red-600/10 dark:shadow-red-500/20 transition-all duration-300"
         >
           <div className="relative z-10 flex flex-col items-start gap-4 text-left">
-            <div className="p-3.5 rounded-2xl text-white bg-gradient-to-br from-red-600 to-purple-700 shadow-lg shadow-red-600/20">
+            <div className="p-3.5 rounded-2xl text-white bg-gradient-to-br from-red-600 to-purple-700 dark:from-red-500 dark:to-purple-600 shadow-lg shadow-red-600/20 dark:shadow-red-500/30">
               <Plus size={24} />
             </div>
             <div>
-              <h3 className="text-xl font-black uppercase italic tracking-tight">Crea Stanza</h3>
-              <p className="text-[10px] font-bold opacity-30 uppercase tracking-widest mt-0.5">Host della serata</p>
+              <h3 className="text-xl font-black uppercase italic tracking-tight text-white dark:text-black">Crea Stanza</h3>
+              <p className="text-[10px] font-bold opacity-30 dark:opacity-60 uppercase tracking-widest mt-0.5 text-white dark:text-black">Host della serata</p>
             </div>
           </div>
-          <Sparkles className="absolute top-6 right-6 text-white/10 animate-pulse" size={32} />
+          <Sparkles className="absolute top-6 right-6 text-white/10 dark:text-black/10 animate-pulse" size={32} />
         </HapticButton>
 
         <HapticButton 
           onClick={onJoinRoom}
           impact="medium"
-          className="group relative w-full p-6 bg-[#1C1C1E] dark:bg-white/90 rounded-[32px] ios-card-shadow border border-white/10 dark:border-black/10 overflow-hidden active:scale-[0.96] transition-all shadow-2xl shadow-blue-600/10 dark:shadow-blue-500/20"
+          className="group relative w-full p-6 bg-[#1C1C1E] dark:bg-gray-100 rounded-[32px] ios-card-shadow border border-white/10 dark:border-black/20 overflow-hidden active:scale-[0.96] transition-all shadow-2xl shadow-blue-600/10 dark:shadow-blue-500/20"
         >
           <div className="relative z-10 flex flex-col items-start gap-4 text-left">
-            <div className="p-3.5 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-2xl text-white shadow-lg shadow-blue-600/20">
+            <div className="p-3.5 bg-gradient-to-br from-blue-600 to-indigo-700 dark:from-blue-500 dark:to-indigo-600 rounded-2xl text-white shadow-lg shadow-blue-600/20 dark:shadow-blue-500/30">
               <Users size={24} />
             </div>
             <div>
-              <h3 className="text-xl font-black uppercase italic tracking-tight">Entra</h3>
-              <p className="text-[10px] font-bold opacity-30 uppercase tracking-widest mt-0.5">Unisciti con codice</p>
+              <h3 className="text-xl font-black uppercase italic tracking-tight text-white dark:text-black">Entra</h3>
+              <p className="text-[10px] font-bold opacity-30 dark:opacity-60 uppercase tracking-widest mt-0.5 text-white dark:text-black">Unisciti con codice</p>
             </div>
           </div>
         </HapticButton>
       </div>
 
-      <footer className="text-center opacity-10 pb-4">
-        <p className="text-[8px] font-black uppercase tracking-[0.4em]">Built for Cinephiles • 2024</p>
+      <footer className="text-center opacity-10 dark:opacity-20 pb-4 transition-opacity duration-500">
+        <p className="text-[8px] font-black uppercase tracking-[0.4em] text-white dark:text-black">Built for Cinephiles • 2024</p>
       </footer>
     </div>
   );

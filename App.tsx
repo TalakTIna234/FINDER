@@ -45,6 +45,15 @@ const App: React.FC = () => {
   const [password, setPassword] = useState('');
   const [signupNickname, setSignupNickname] = useState('');
 
+  // Applica dark mode al DOM
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
+
   useEffect(() => {
     // Gestisci callback OAuth (Supabase può usare hash o query params)
     const handleOAuthCallback = async () => {
@@ -134,6 +143,8 @@ const App: React.FC = () => {
             const profile = await profileService.getCurrentProfile();
             if (profile) {
               setBio(profile.bio || '');
+              setNickname(profile.nickname);
+              setAvatarUrl(profile.avatar_url || null);
             }
             
             // Carica playlist da database
@@ -149,13 +160,22 @@ const App: React.FC = () => {
             // Carica statistiche
             try {
               const stats = await statsService.getStats();
-              if (stats) setUserStats(stats);
+              if (stats) {
+                setUserStats(stats);
+                console.log('Stats loaded:', stats);
+              } else {
+                // Crea statistiche se non esistono
+                const newStats = await statsService.createStats(user.id);
+                if (newStats) setUserStats(newStats);
+              }
             } catch (e) {
               console.warn('Error loading stats:', e);
             }
             
             setCurrentUserId(user.id);
             setActiveTab('home');
+            
+            // Forza un re-render aggiornando lo stato
             console.log('✓ User logged in successfully');
           } else {
             console.error('=== OAUTH LOGIN FAILED ===');
@@ -259,6 +279,43 @@ const App: React.FC = () => {
       subscription.unsubscribe();
     };
   }, []);
+
+  // Refresh profilo quando si cambia tab al profilo
+  useEffect(() => {
+    if (activeTab === 'profile' && !isGuest) {
+      const refreshProfile = async () => {
+        try {
+          const user = await authService.getCurrentUser();
+          if (user) {
+            setIsGuest(false);
+            setNickname(user.nickname);
+            setAvatarUrl(user.avatar_url || null);
+            
+            const profile = await profileService.getCurrentProfile();
+            if (profile) {
+              setBio(profile.bio || '');
+            }
+            
+            const dbPlaylist = await playlistService.getPlaylist();
+            if (dbPlaylist.length > 0) {
+              setLikedMovies(dbPlaylist);
+            }
+            
+            const stats = await statsService.getStats();
+            if (stats) setUserStats(stats);
+            
+            setCurrentUserId(user.id);
+          } else {
+            setIsGuest(true);
+          }
+        } catch (error) {
+          console.error('Error refreshing profile:', error);
+        }
+      };
+      
+      refreshProfile();
+    }
+  }, [activeTab]);
 
   const saveProfile = async () => {
     if (isGuest) {
@@ -759,30 +816,154 @@ const App: React.FC = () => {
             </div>
           )}
 
-          {/* Mostra statistiche solo se loggato */}
+          {/* Dashboard completa solo se loggato */}
           {!isGuest && (
-            <div className="bg-white/5 backdrop-blur-2xl p-6 rounded-[32px] border border-white/10 space-y-4 shadow-2xl mb-6">
-              <div className="flex justify-between items-center py-2">
-                <span className="text-[10px] font-black uppercase opacity-60 tracking-widest">Film Salvati</span>
-                <span className="font-black text-xl text-red-600 italic tracking-tighter">{likedMovies.length}</span>
+            <div className="space-y-6 mb-6">
+              {/* Statistiche principali */}
+              <div className="bg-white/5 backdrop-blur-2xl p-6 rounded-[32px] border border-white/10 shadow-2xl">
+                <h3 className="text-sm font-black uppercase italic tracking-tight mb-5 opacity-80">Statistiche Gioco</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gradient-to-br from-red-600/20 to-red-800/20 backdrop-blur-xl rounded-[24px] p-4 border border-red-500/20">
+                    <div className="text-[9px] font-black uppercase opacity-60 tracking-widest mb-1">Film Salvati</div>
+                    <div className="text-3xl font-black italic text-red-500">{likedMovies.length}</div>
+                  </div>
+                  {userStats && (
+                    <>
+                      <div className="bg-gradient-to-br from-green-600/20 to-green-800/20 backdrop-blur-xl rounded-[24px] p-4 border border-green-500/20">
+                        <div className="text-[9px] font-black uppercase opacity-60 tracking-widest mb-1">Match Trovati</div>
+                        <div className="text-3xl font-black italic text-green-500">{userStats.matches_found}</div>
+                      </div>
+                      <div className="bg-gradient-to-br from-purple-600/20 to-purple-800/20 backdrop-blur-xl rounded-[24px] p-4 border border-purple-500/20">
+                        <div className="text-[9px] font-black uppercase opacity-60 tracking-widest mb-1">Stanze Create</div>
+                        <div className="text-3xl font-black italic text-purple-500">{userStats.rooms_created}</div>
+                      </div>
+                      <div className="bg-gradient-to-br from-blue-600/20 to-blue-800/20 backdrop-blur-xl rounded-[24px] p-4 border border-blue-500/20">
+                        <div className="text-[9px] font-black uppercase opacity-60 tracking-widest mb-1">Stanze Unite</div>
+                        <div className="text-3xl font-black italic text-blue-500">{userStats.rooms_joined}</div>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
-              {userStats && (
-                <>
-                  <div className="flex justify-between items-center py-2 border-t border-white/5">
-                    <span className="text-[10px] font-black uppercase opacity-60 tracking-widest">Match Trovati</span>
-                    <span className="font-black text-lg text-green-500 italic tracking-tighter">{userStats.matches_found}</span>
+
+              {/* Generi preferiti */}
+              {likedMovies.length > 0 && (() => {
+                const genreCount: Record<string, number> = {};
+                likedMovies.forEach(movie => {
+                  if (movie.genres) {
+                    movie.genres.forEach(genre => {
+                      genreCount[genre] = (genreCount[genre] || 0) + 1;
+                    });
+                  }
+                });
+                const topGenres = Object.entries(genreCount)
+                  .sort(([, a], [, b]) => b - a)
+                  .slice(0, 5);
+                
+                return (
+                  <div className="bg-white/5 backdrop-blur-2xl p-6 rounded-[32px] border border-white/10 shadow-2xl">
+                    <h3 className="text-sm font-black uppercase italic tracking-tight mb-5 opacity-80">Generi Preferiti</h3>
+                    <div className="space-y-3">
+                      {topGenres.map(([genre, count], index) => (
+                        <div key={genre} className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 flex-1">
+                            <div className="w-8 h-8 bg-gradient-to-br from-red-600/30 to-purple-600/30 rounded-full flex items-center justify-center text-xs font-black">
+                              {index + 1}
+                            </div>
+                            <span className="font-bold text-sm">{genre}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-24 h-2 bg-white/5 rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-gradient-to-r from-red-600 to-purple-600 rounded-full transition-all duration-500"
+                                style={{ width: `${(count / likedMovies.length) * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-xs font-black opacity-60 w-8 text-right">{count}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center py-2 border-t border-white/5">
-                    <span className="text-[10px] font-black uppercase opacity-60 tracking-widest">Stanze Create</span>
-                    <span className="font-black text-lg text-purple-500 italic tracking-tighter">{userStats.rooms_created}</span>
+                );
+              })()}
+
+              {/* Film recenti */}
+              {likedMovies.length > 0 && (
+                <div className="bg-white/5 backdrop-blur-2xl p-6 rounded-[32px] border border-white/10 shadow-2xl">
+                  <h3 className="text-sm font-black uppercase italic tracking-tight mb-5 opacity-80">Film Recenti</h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    {likedMovies.slice(0, 6).map(movie => (
+                      <div key={movie.id} className="relative aspect-[2/3] rounded-[16px] overflow-hidden border border-white/10 group">
+                        {movie.poster ? (
+                          <img 
+                            src={movie.poster} 
+                            alt={movie.title}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-red-600/20 to-purple-600/20 flex items-center justify-center">
+                            <span className="text-xs font-black opacity-50 text-center px-2">{movie.title}</span>
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="absolute bottom-2 left-2 right-2">
+                            <div className="text-[9px] font-black truncate">{movie.title}</div>
+                            <div className="text-[8px] font-black opacity-60">{movie.year}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </>
+                </div>
               )}
-              <div className="flex justify-between items-center py-2 border-t border-white/5">
-                <span className="text-[10px] font-black uppercase opacity-60 tracking-widest">Stato Account</span>
-                <span className="font-black text-[9px] uppercase px-4 py-1.5 rounded-full bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-600/30 border border-red-500/30">
-                  Premium
-                </span>
+
+              {/* Livello utente */}
+              {userStats && (() => {
+                const totalPoints = (userStats.movies_liked || 0) * 10 + 
+                                  (userStats.matches_found || 0) * 50 + 
+                                  (userStats.rooms_created || 0) * 30 + 
+                                  (userStats.rooms_joined || 0) * 20;
+                const level = Math.floor(totalPoints / 100) + 1;
+                const progress = (totalPoints % 100);
+                
+                return (
+                  <div className="bg-gradient-to-br from-red-600/20 via-purple-700/20 to-indigo-800/20 backdrop-blur-2xl p-6 rounded-[32px] border border-white/10 shadow-2xl">
+                    <h3 className="text-sm font-black uppercase italic tracking-tight mb-5 opacity-80">Livello Cinefilo</h3>
+                    <div className="space-y-4">
+                      <div className="text-center">
+                        <div className="text-5xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-purple-600 to-indigo-600">
+                          {level}
+                        </div>
+                        <div className="text-[10px] font-black uppercase opacity-60 tracking-widest mt-1">
+                          {totalPoints} Punti Totali
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-[9px] font-black uppercase opacity-60">
+                          <span>Progresso al livello {level + 1}</span>
+                          <span>{progress}/100</span>
+                        </div>
+                        <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-gradient-to-r from-red-600 via-purple-600 to-indigo-600 rounded-full transition-all duration-500"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Stato Account */}
+              <div className="bg-white/5 backdrop-blur-2xl p-6 rounded-[32px] border border-white/10 shadow-2xl">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] font-black uppercase opacity-60 tracking-widest">Stato Account</span>
+                  <span className="font-black text-[10px] uppercase px-4 py-2 rounded-full bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-600/30 border border-red-500/30">
+                    Premium
+                  </span>
+                </div>
               </div>
             </div>
           )}
@@ -805,7 +986,7 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="h-screen w-screen relative overflow-hidden flex flex-col bg-black">
+    <div className="h-screen w-screen relative overflow-hidden flex flex-col bg-black dark:bg-white transition-colors duration-500">
       <main className="flex-1 relative overflow-hidden">{renderContent()}</main>
       {!isSessionActive && !roomViewMode && (
         <nav className="fixed bottom-0 left-0 right-0 h-20 bg-black/80 ios-blur border-t border-white/5 flex items-center justify-around px-8 pb-2 z-[90]">

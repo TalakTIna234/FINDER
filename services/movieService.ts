@@ -17,6 +17,12 @@ const apiKeyParam = isApiKey ? `&api_key=${TMDB_ACCESS_TOKEN}` : '';
 export const movieService = {
   async discoverByGenre(genreId: number): Promise<Movie[]> {
     try {
+      // Verifica che il token sia presente
+      if (!TMDB_ACCESS_TOKEN) {
+        console.error('TMDB_ACCESS_TOKEN is missing!');
+        throw new Error('Token TMDB non configurato. Verifica le variabili d\'ambiente.');
+      }
+      
       // Genera una pagina random tra 1 e 20 (TMDB ha molte pagine)
       const randomPage = Math.floor(Math.random() * 20) + 1;
       
@@ -30,19 +36,31 @@ export const movieService = {
       ];
       const randomSort = sortOptions[Math.floor(Math.random() * sortOptions.length)];
       
+      const url = `${BASE_URL}/discover/movie?with_genres=${genreId}&language=it-IT&sort_by=${randomSort}&page=${randomPage}&include_adult=false${apiKeyParam}`;
       console.log(`Fetching movies for genre ${genreId}, page ${randomPage}, sort: ${randomSort}`);
+      console.log('TMDB URL:', url.replace(TMDB_ACCESS_TOKEN, '***'));
       
-      const response = await fetch(
-        `${BASE_URL}/discover/movie?with_genres=${genreId}&language=it-IT&sort_by=${randomSort}&page=${randomPage}&include_adult=false${apiKeyParam}`,
-        { headers }
-      );
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const response = await fetch(url, { headers });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`TMDB API Error (${response.status}):`, errorText);
+        throw new Error(`Errore TMDB API: ${response.status} - ${errorText.substring(0, 100)}`);
+      }
+      
       const data = await response.json();
+      
+      if (!data.results || data.results.length === 0) {
+        console.warn('TMDB returned empty results');
+        throw new Error('Nessun film trovato per questo genere. Prova con un altro genere.');
+      }
+      
+      console.log(`TMDB returned ${data.results.length} movies`);
       
       // Mescola i risultati per avere ancora più varietà
       const shuffled = [...data.results].sort(() => Math.random() - 0.5);
       
-      return shuffled.slice(0, 15).map((m: any) => ({
+      const movies = shuffled.slice(0, 15).map((m: any) => ({
         id: m.id,
         title: m.title,
         year: m.release_date?.split('-')[0] || "2024",
@@ -53,9 +71,13 @@ export const movieService = {
         genres: m.genre_ids.map((id: number) => GENRES.find(g => g.id === id)?.name || "Film"), 
         overview: m.overview || "Nessuna trama disponibile."
       }));
+      
+      console.log(`Successfully mapped ${movies.length} movies`);
+      return movies;
     } catch (e) {
       console.error("TMDb Discover failed", e);
-      return MOCK_MOVIES;
+      // Non ritornare MOCK_MOVIES, rilancia l'errore
+      throw e;
     }
   },
 

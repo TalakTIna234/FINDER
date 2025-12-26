@@ -78,12 +78,15 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
 
   const handleSelectGenre = async (genreId: number) => {
     setLoading(true);
+    let timeoutCleared = false;
     
     // Timeout di sicurezza - se passa più di 30 secondi, mostra errore
     const timeoutId = setTimeout(() => {
-      console.error('Timeout: handleSelectGenre took more than 30 seconds');
-      alert('Il caricamento sta impiegando troppo tempo. Controlla la console per dettagli. Verifica che le tabelle rooms e room_members siano state create in Supabase.');
-      setLoading(false);
+      if (!timeoutCleared) {
+        console.error('Timeout: handleSelectGenre took more than 30 seconds');
+        alert('Il caricamento sta impiegando troppo tempo. Controlla la console per dettagli. Verifica che:\n1. Il token TMDB sia configurato\n2. Le tabelle rooms e room_members siano state create in Supabase\n3. La connessione internet sia attiva');
+        setLoading(false);
+      }
     }, 30000);
     
     try {
@@ -93,14 +96,29 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       
       // Carica film
       console.log('[1/4] Loading movies from TMDB...');
+      console.log('TMDB Access Token present:', !!import.meta.env.VITE_TMDB_ACCESS_TOKEN);
       const moviesStartTime = Date.now();
-      const movies = await movieService.discoverByGenre(genreId);
+      
+      let movies: Movie[] = [];
+      try {
+        movies = await movieService.discoverByGenre(genreId);
+      } catch (movieError) {
+        clearTimeout(timeoutId);
+        console.error('[1/4] Error loading movies:', movieError);
+        const errorMsg = movieError instanceof Error ? movieError.message : 'Errore sconosciuto';
+        alert(`Errore nel caricamento dei film: ${errorMsg}\n\nVerifica che:\n1. Il token TMDB sia configurato correttamente\n2. La connessione internet sia attiva\n3. Controlla la console per dettagli.`);
+        setLoading(false);
+        return;
+      }
+      
       const moviesLoadTime = Date.now() - moviesStartTime;
       console.log(`[1/4] Movies loaded in ${moviesLoadTime}ms:`, movies?.length || 0);
+      console.log('[1/4] Sample movie:', movies[0]);
       
       if (!movies || movies.length === 0) {
         clearTimeout(timeoutId);
-        alert('Nessun film trovato per questo genere. Riprova.');
+        console.error('[1/4] No movies returned from TMDB');
+        alert('Nessun film trovato per questo genere. Verifica:\n1. Il token TMDB sia valido\n2. La connessione internet sia attiva\n3. Riprova con un altro genere.');
         setLoading(false);
         return;
       }
@@ -152,13 +170,36 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       
       let newRoom: Room | null = null;
       try {
-        newRoom = await roomService.createRoom(user.id, user.nickname, movies);
+        console.log('[3/4] Calling roomService.createRoom...');
+        const createRoomPromise = roomService.createRoom(user.id, user.nickname, movies);
+        
+        // Aggiungi timeout per la creazione stanza (20 secondi)
+        const roomTimeout = setTimeout(() => {
+          console.error('[3/4] Room creation timeout after 20 seconds');
+        }, 20000);
+        
+        newRoom = await createRoomPromise;
+        clearTimeout(roomTimeout);
+        
+        console.log('[3/4] createRoom returned:', newRoom ? 'Room object' : 'null');
       } catch (roomError) {
         clearTimeout(timeoutId);
-        console.error('Exception in createRoom:', roomError);
+        console.error('[3/4] Exception in createRoom:', roomError);
+        console.error('[3/4] Error type:', roomError instanceof Error ? roomError.constructor.name : typeof roomError);
+        console.error('[3/4] Error stack:', roomError instanceof Error ? roomError.stack : 'No stack');
+        
         const errorMessage = roomError instanceof Error ? roomError.message : 'Errore sconosciuto';
-        console.error('Full error:', errorMessage);
-        alert(`Errore nella creazione della stanza: ${errorMessage}\n\nVerifica che:\n1. Le tabelle rooms e room_members siano state create in Supabase\n2. Hai eseguito lo schema SQL (supabase-rooms-schema.sql)\n3. Controlla la console per dettagli.`);
+        console.error('[3/4] Full error message:', errorMessage);
+        
+        // Messaggio più dettagliato
+        let userMessage = `Errore nella creazione della stanza: ${errorMessage}\n\n`;
+        userMessage += `Verifica che:\n`;
+        userMessage += `1. Le tabelle rooms e room_members siano state create in Supabase\n`;
+        userMessage += `2. Hai eseguito lo schema SQL (supabase-rooms-schema.sql)\n`;
+        userMessage += `3. Hai eseguito supabase-rooms-guest-support.sql per supporto guest\n`;
+        userMessage += `4. Controlla la console per dettagli completi`;
+        
+        alert(userMessage);
         setLoading(false);
         return;
       }
@@ -194,18 +235,21 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         console.warn('Error incrementing stats (non-critical):', statsError);
       }
       
+      timeoutCleared = true;
       clearTimeout(timeoutId);
       
       // Imposta step a lobby DOPO aver impostato roomCode e room
       console.log('Setting step to lobby...');
-      setLoading(false);
       
       // Piccolo delay per assicurare che il loading state sia aggiornato
       await new Promise(resolve => setTimeout(resolve, 100));
+      
+      setLoading(false);
       setStep('lobby');
       
       console.log('=== GENRE SELECTION COMPLETED SUCCESSFULLY ===');
     } catch (error) {
+      timeoutCleared = true;
       clearTimeout(timeoutId);
       console.error('=== ERROR IN HANDLE SELECT GENRE ===');
       console.error('Error:', error);
@@ -230,21 +274,42 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
     }
   };
 
-  // Funzioni per modalità manuale
-  const handleManualSearch = async () => {
-    if (!searchQuery.trim()) return;
-    
-    setIsSearching(true);
-    try {
-      const results = await movieService.searchMovies(searchQuery);
-      setSearchResults(results);
-    } catch (error) {
-      console.error('Error searching movies:', error);
-      alert('Errore nella ricerca film');
-    } finally {
+  // Funzioni per modalità manuale - ricerca automatica con debounce
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
       setIsSearching(false);
+      return;
     }
-  };
+    
+    let isMounted = true;
+    
+    const searchTimeout = setTimeout(async () => {
+      if (!isMounted) return;
+      
+      setIsSearching(true);
+      try {
+        const results = await movieService.searchMovies(searchQuery);
+        if (isMounted) {
+          setSearchResults(results);
+        }
+      } catch (error) {
+        if (isMounted) {
+          console.error('Error searching movies:', error);
+          setSearchResults([]);
+        }
+      } finally {
+        if (isMounted) {
+          setIsSearching(false);
+        }
+      }
+    }, 500); // Debounce di 500ms
+    
+    return () => {
+      isMounted = false;
+      clearTimeout(searchTimeout);
+    };
+  }, [searchQuery]);
 
   const addMovieToManualList = (movie: Movie) => {
     if (manualMovies.find(m => m.id === movie.id)) {
@@ -268,8 +333,13 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
     
     setLoading(true);
     
+    // Flag per controllare se il componente è ancora montato
+    let isMounted = true;
+    
     try {
       let user = await authService.getCurrentUser();
+      
+      if (!isMounted) return;
       
       if (!user) {
         let guestId = localStorage.getItem('mm_guest_id');
@@ -291,7 +361,14 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         };
       }
       
+      if (!isMounted) return;
+      
       const newRoom = await roomService.createRoom(user.id, user.nickname, manualMovies);
+      
+      if (!isMounted) {
+        setLoading(false);
+        return;
+      }
       
       if (!newRoom) {
         alert('Errore nella creazione della stanza');
@@ -302,19 +379,31 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       setRoomCode(newRoom.code);
       setRoom(newRoom);
       
-      try {
-        await statsService.increment('rooms_created');
-      } catch (statsError) {
-        console.warn('Error incrementing stats (non-critical):', statsError);
-      }
+      // Statistiche non bloccanti
+      statsService.increment('rooms_created').catch(err => {
+        console.warn('Error incrementing stats (non-critical):', err);
+      });
       
       setLoading(false);
       setStep('lobby');
     } catch (error) {
+      if (!isMounted) return;
+      
       console.error('Error creating manual room:', error);
+      
+      // Ignora errori di navigazione/chiusura browser
+      if (error instanceof Error && error.message.includes('browsing context')) {
+        console.warn('Browser context closed, ignoring error');
+        return;
+      }
+      
       alert('Errore nella creazione della stanza: ' + (error instanceof Error ? error.message : 'Errore sconosciuto'));
       setLoading(false);
     }
+    
+    return () => {
+      isMounted = false;
+    };
   };
 
   if (loading) {
@@ -511,53 +600,83 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
 
       {step === 'manual' && (
         <div className="flex-1 flex flex-col space-y-6 pb-32 overflow-y-auto">
-          {/* Barra di ricerca */}
-          <div className="space-y-4">
-            <div className="flex gap-3">
+          {/* Barra di ricerca con dropdown */}
+          <div className="space-y-4 relative">
+            <div className="relative">
+              <Search size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/40 z-10" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleManualSearch()}
-                placeholder="Cerca film..."
-                className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold text-sm focus:outline-none focus:border-red-600/50 transition-colors"
+                placeholder="Cerca film... (ricerca automatica)"
+                className="w-full bg-white/10 backdrop-blur-xl border border-white/20 rounded-[24px] pl-14 pr-5 py-4 font-bold text-sm focus:outline-none focus:border-red-600/50 focus:bg-white/15 transition-all duration-300 text-white placeholder:text-white/30 shadow-lg"
               />
-              <HapticButton
-                onClick={handleManualSearch}
-                disabled={!searchQuery.trim() || isSearching}
-                className="px-6 py-4 bg-gradient-to-br from-red-600 to-purple-700 rounded-2xl font-black text-sm uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
-              >
-                {isSearching ? '...' : <Search size={20} />}
-              </HapticButton>
+              {isSearching && (
+                <div className="absolute right-5 top-1/2 -translate-y-1/2">
+                  <div className="w-5 h-5 border-2 border-white/20 border-t-red-600 rounded-full animate-spin" />
+                </div>
+              )}
             </div>
-          </div>
 
-          {/* Risultati ricerca */}
-          {searchResults.length > 0 && (
-            <div className="space-y-3">
-              <h3 className="text-xs font-black opacity-30 uppercase tracking-widest px-1">Risultati</h3>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {searchResults.map(movie => (
-                  <HapticButton
-                    key={movie.id}
-                    onClick={() => addMovieToManualList(movie)}
-                    className="w-full bg-white/5 p-4 rounded-2xl flex items-center gap-4 border border-white/5 active:scale-[0.98] transition-all"
-                  >
-                    {movie.poster && (
-                      <img src={movie.poster} alt={movie.title} className="w-16 h-24 object-cover rounded-xl" />
-                    )}
-                    <div className="flex-1 text-left">
-                      <h4 className="font-black text-sm">{movie.title}</h4>
-                      <p className="text-[10px] opacity-50">{movie.year} • {movie.rating}/10</p>
-                    </div>
-                    <div className="text-green-500">
-                      <Check size={20} />
-                    </div>
-                  </HapticButton>
-                ))}
+            {/* Dropdown risultati elegante */}
+            {searchQuery.trim() && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white/10 backdrop-blur-2xl rounded-[24px] border border-white/20 shadow-2xl z-50 max-h-96 overflow-y-auto">
+                {isSearching ? (
+                  <div className="p-8 text-center">
+                    <div className="w-8 h-8 border-2 border-white/20 border-t-red-600 rounded-full animate-spin mx-auto mb-3" />
+                    <p className="text-xs font-black opacity-40 uppercase tracking-widest">Ricerca in corso...</p>
+                  </div>
+                ) : searchResults.length > 0 ? (
+                  <div className="p-2 space-y-1">
+                    {searchResults.map(movie => (
+                      <HapticButton
+                        key={movie.id}
+                        onClick={() => addMovieToManualList(movie)}
+                        className="w-full bg-white/5 hover:bg-white/10 p-4 rounded-[20px] flex items-center gap-4 border border-white/5 active:scale-[0.98] transition-all duration-200 group"
+                      >
+                        {movie.poster ? (
+                          <img 
+                            src={movie.poster} 
+                            alt={movie.title} 
+                            className="w-16 h-24 object-cover rounded-xl shadow-lg group-hover:scale-105 transition-transform"
+                          />
+                        ) : (
+                          <div className="w-16 h-24 bg-gradient-to-br from-red-600/20 to-purple-600/20 rounded-xl flex items-center justify-center">
+                            <span className="text-xs font-black opacity-50">No Image</span>
+                          </div>
+                        )}
+                        <div className="flex-1 text-left min-w-0">
+                          <h4 className="font-black text-sm truncate mb-1">{movie.title}</h4>
+                          <div className="flex items-center gap-3 text-[10px] opacity-70">
+                            <span className="font-bold">{movie.year}</span>
+                            <span>•</span>
+                            <div className="flex items-center gap-1">
+                              <span className="text-yellow-500">★</span>
+                              <span className="font-bold">{movie.rating}/10</span>
+                            </div>
+                            {movie.genres && movie.genres.length > 0 && (
+                              <>
+                                <span>•</span>
+                                <span className="truncate">{movie.genres[0]}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-green-500 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Check size={24} />
+                        </div>
+                      </HapticButton>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-8 text-center">
+                    <p className="text-xs font-black opacity-40 uppercase tracking-widest">Nessun risultato trovato</p>
+                    <p className="text-[10px] font-black opacity-20 mt-2">Prova con un altro titolo</p>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            )}
+          </div>
 
           {/* Lista film selezionati */}
           {manualMovies.length > 0 && (

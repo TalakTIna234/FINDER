@@ -489,7 +489,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
   }
 
   return (
-    <div className="flex flex-col h-full px-6 pt-16 bg-black dark:bg-white text-white dark:text-black transition-colors duration-500">
+    <div className="flex flex-col h-full px-6 pt-16 pb-4 bg-black dark:bg-white text-white dark:text-black transition-colors duration-500 overflow-y-auto">
       <header className="flex items-center gap-4 mb-10">
         <HapticButton onClick={onBack} className="p-3 bg-white/5 dark:bg-black/10 rounded-full border border-white/10 dark:border-black/20 active:bg-white/10 dark:active:bg-black/20 transition-colors duration-500">
           <ChevronLeft className="text-white dark:text-black" />

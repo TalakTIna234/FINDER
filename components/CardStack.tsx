@@ -39,7 +39,7 @@ const MovieCard: React.FC<CardProps> = ({ movie, onSwipe, isFront, onShowDetails
   return (
     <motion.div
       style={{ x, y, rotate, opacity, zIndex: isFront ? 10 : 0 }}
-      drag={isFront}
+      drag={isFront && !isPaused}
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
       onDragEnd={(_, info) => {
         if (info.offset.x > 120) onSwipe('right');
@@ -276,7 +276,10 @@ export const CardStack: React.FC<CardStackProps> = ({
               key={`${round}-${movie.id}`} 
               movie={movie} 
               onSwipe={handleSwipe} 
-              onShowDetails={() => setSelectedMovie(movie)}
+              onShowDetails={() => !isPaused && setSelectedMovie(movie)}
+              onRequestTrailer={isMultiplayer ? (movie, trailerKey) => {
+                handleRequestTrailer(movie, trailerKey);
+              } : undefined}
               isFront={idx === 1 || currentRoundMovies.length - currentIndex === 1} 
             />
           ))}
@@ -287,7 +290,8 @@ export const CardStack: React.FC<CardStackProps> = ({
         <HapticButton 
           impact="heavy"
           onClick={() => handleSwipe('left')}
-          className="w-16 h-16 rounded-full bg-white/5 dark:bg-black/10 border border-white/10 dark:border-black/20 flex items-center justify-center text-red-500 dark:text-red-600 shadow-xl active:bg-red-500/10 dark:active:bg-red-600/20 transition-colors duration-500"
+          disabled={isPaused}
+          className="w-16 h-16 rounded-full bg-white/5 dark:bg-black/10 border border-white/10 dark:border-black/20 flex items-center justify-center text-red-500 dark:text-red-600 shadow-xl active:bg-red-500/10 dark:active:bg-red-600/20 transition-colors duration-500 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <X size={32} strokeWidth={3} />
         </HapticButton>
@@ -295,7 +299,8 @@ export const CardStack: React.FC<CardStackProps> = ({
         <HapticButton 
           impact="heavy"
           onClick={() => handleSwipe('up')}
-          className="w-16 h-16 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white shadow-xl scale-125 ring-4 ring-black dark:ring-white transition-colors duration-500"
+          disabled={isPaused}
+          className="w-16 h-16 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white shadow-xl scale-125 ring-4 ring-black dark:ring-white transition-colors duration-500 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <Star size={32} fill="currentColor" strokeWidth={0} />
         </HapticButton>
@@ -303,7 +308,8 @@ export const CardStack: React.FC<CardStackProps> = ({
         <HapticButton 
           impact="heavy"
           onClick={() => handleSwipe('right')}
-          className="w-16 h-16 rounded-full bg-green-500 dark:bg-green-600 flex items-center justify-center text-white shadow-xl active:bg-green-400 dark:active:bg-green-500 transition-colors duration-500"
+          disabled={isPaused}
+          className="w-16 h-16 rounded-full bg-green-500 dark:bg-green-600 flex items-center justify-center text-white shadow-xl active:bg-green-400 dark:active:bg-green-500 transition-colors duration-500 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <Heart size={32} fill="currentColor" strokeWidth={0} />
         </HapticButton>

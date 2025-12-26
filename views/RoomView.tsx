@@ -80,14 +80,14 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
     setLoading(true);
     let timeoutCleared = false;
     
-    // Timeout di sicurezza - ridotto a 20 secondi per mobile
+    // Timeout di sicurezza - massimo 4 secondi per operatività
     const timeoutId = setTimeout(() => {
       if (!timeoutCleared) {
-        console.error('Timeout: handleSelectGenre took more than 20 seconds');
-        alert('Il caricamento sta impiegando troppo tempo. Controlla la console per dettagli. Verifica che:\n1. Il token TMDB sia configurato\n2. Le tabelle rooms e room_members siano state create in Supabase\n3. La connessione internet sia attiva');
+        console.error('Timeout: handleSelectGenre took more than 4 seconds');
+        alert('Il caricamento sta impiegando troppo tempo. Verifica la connessione internet e riprova.');
         setLoading(false);
       }
-    }, 20000);
+    }, 4000);
     
     try {
       console.log('=== STARTING GENRE SELECTION ===');
@@ -101,10 +101,10 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       
       let movies: Movie[] = [];
       try {
-        // Aggiungi timeout specifico per la chiamata TMDB (20 secondi)
+        // Timeout specifico per la chiamata TMDB (3 secondi per velocità)
         const tmdbTimeout = setTimeout(() => {
-          console.error('[1/4] TMDB call timeout after 20 seconds');
-        }, 20000);
+          console.error('[1/4] TMDB call timeout after 3 seconds');
+        }, 3000);
         
         movies = await movieService.discoverByGenre(genreId);
         clearTimeout(tmdbTimeout);

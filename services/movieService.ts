@@ -40,32 +40,28 @@ export const movieService = {
         'vote_count.desc'
       ];
       
-      // Pagine da provare: prima alcune pagine popolari (1-5), poi random
-      const pagesToTry = [
-        1, 2, 3, // Pagine popolari
-        Math.floor(Math.random() * 10) + 1, // Random 1-10
-        Math.floor(Math.random() * 20) + 1  // Random 1-20
-      ];
+      // Pagine da provare: solo pagine popolari per velocità (max 2 tentativi)
+      const pagesToTry = [1, 2]; // Solo prime 2 pagine popolari
       
       let lastError: Error | null = null;
       
-      // Prova fino a 5 pagine diverse
-      for (let attempt = 0; attempt < 5; attempt++) {
+      // Prova solo 2 pagine per velocità massima
+      for (let attempt = 0; attempt < 2; attempt++) {
         try {
           // Usa pagine specifiche per i primi tentativi, poi random
           const page = attempt < pagesToTry.length ? pagesToTry[attempt] : Math.floor(Math.random() * 20) + 1;
           const randomSort = sortOptions[Math.floor(Math.random() * sortOptions.length)];
           
           const url = `${BASE_URL}/discover/movie?with_genres=${genreId}&language=it-IT&sort_by=${randomSort}&page=${page}&include_adult=false${apiKeyParam}`;
-          console.log(`[TMDB] Attempt ${attempt + 1}/5: Genre ${validGenre.name} (ID: ${genreId}), Page ${page}, Sort: ${randomSort}`);
+          console.log(`[TMDB] Attempt ${attempt + 1}/2: Genre ${validGenre.name} (ID: ${genreId}), Page ${page}, Sort: ${randomSort}`);
           console.log(`[TMDB] URL: ${url.replace(TMDB_ACCESS_TOKEN, '***')}`);
           
-          // Crea un AbortController per timeout - ridotto a 10 secondi per mobile
+          // Crea un AbortController per timeout - massimo 3 secondi per velocità
           const controller = new AbortController();
           const timeoutId = setTimeout(() => {
-            console.error(`[TMDB] Timeout after 10 seconds on attempt ${attempt + 1}`);
+            console.error(`[TMDB] Timeout after 3 seconds on attempt ${attempt + 1}`);
             controller.abort();
-          }, 10000); // 10 secondi timeout per mobile
+          }, 3000); // 3 secondi timeout per massima velocità
           
           try {
             const response = await fetch(url, { 
@@ -84,11 +80,10 @@ export const movieService = {
                 throw new Error(`Errore autenticazione TMDB: Token non valido o scaduto. Verifica VITE_TMDB_ACCESS_TOKEN.`);
               }
               
-              // Se è un errore 429 (rate limit), aspetta un po' e riprova
-              if (response.status === 429 && attempt < retries - 1) {
-                console.log('Rate limit raggiunto, aspetto 2 secondi...');
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                continue;
+              // Se è un errore 429 (rate limit), riprova immediatamente (no delay per velocità)
+              if (response.status === 429 && attempt < 1) {
+                console.log('Rate limit raggiunto, riprovo immediatamente...');
+                continue; // Riprova immediatamente senza delay
               }
               
               throw new Error(`Errore TMDB API: ${response.status} - ${errorText.substring(0, 100)}`);
@@ -125,13 +120,12 @@ export const movieService = {
           } catch (fetchError: any) {
             clearTimeout(timeoutId);
             
-            // Se è un abort (timeout), riprova
+            // Se è un abort (timeout), riprova immediatamente senza delay
             if (fetchError.name === 'AbortError') {
-              console.warn(`Timeout on attempt ${attempt + 1}, retrying...`);
-              lastError = new Error('Timeout nella chiamata a TMDB. Riprova.');
-              if (attempt < 4) {
-                await new Promise(resolve => setTimeout(resolve, 1000)); // Aspetta 1 secondo
-                continue;
+              console.warn(`[TMDB] Timeout on attempt ${attempt + 1}, retrying immediately...`);
+              lastError = new Error('Timeout nella chiamata a TMDB.');
+              if (attempt < 1) {
+                continue; // Riprova immediatamente senza delay
               }
             }
             
@@ -142,19 +136,16 @@ export const movieService = {
           console.error(`[TMDB] Attempt ${attempt + 1} failed:`, attemptError);
           lastError = attemptError instanceof Error ? attemptError : new Error('Errore sconosciuto');
           
-          // Se non è l'ultimo tentativo, riprova
-          if (attempt < 4) {
-            const waitTime = (attempt + 1) * 1000; // Backoff esponenziale: 1s, 2s, 3s, 4s
-            console.log(`[TMDB] Waiting ${waitTime}ms before retry...`);
-            await new Promise(resolve => setTimeout(resolve, waitTime));
-            continue;
+          // Se non è l'ultimo tentativo, riprova immediatamente (no delay per velocità)
+          if (attempt < 1) {
+            continue; // Riprova immediatamente senza delay
           }
         }
       }
       
       // Se arriviamo qui, tutti i tentativi sono falliti
-      console.error(`[TMDB] All 5 attempts failed for genre ${genreId} (${validGenre.name})`);
-      throw lastError || new Error(`Impossibile caricare i film per il genere "${validGenre.name}". Riprova più tardi o prova con un altro genere.`);
+      console.error(`[TMDB] All 2 attempts failed for genre ${genreId} (${validGenre.name})`);
+      throw lastError || new Error(`Impossibile caricare i film per il genere "${validGenre.name}". Riprova.`);
       
     } catch (e) {
       console.error("TMDb Discover failed after all retries", e);

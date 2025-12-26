@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { HapticButton } from '../components/HapticButton';
-import { ChevronLeft, Share, Play, Users, Search, List, Wand2, Sparkles, Check, X } from 'lucide-react';
+import { ChevronLeft, Share, Play, Users, Search, List, Wand2, Sparkles, Check, X, Copy, MessageSquare } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { GENRES, DEFAULT_MOVIES_BY_GENRE } from '../constants';
 import { Movie } from '../types';
 import { movieService } from '../services/movieService';
@@ -476,7 +477,55 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       )}
 
       {step === 'code' && (
-        <div className="flex-1 flex flex-col justify-center space-y-8 pb-32">
+        <div className="flex-1 flex flex-col space-y-8 pb-40">
+          {/* Animazione grafica nella parte alta */}
+          <div className="relative h-32 -mx-6 -mt-6 overflow-hidden">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+              className="absolute inset-0 bg-gradient-to-br from-red-600/20 via-purple-600/20 to-indigo-600/20 dark:from-red-500/20 dark:via-purple-500/20 dark:to-indigo-500/20"
+            />
+            <motion.div
+              animate={{
+                scale: [1, 1.2, 1],
+                rotate: [0, 5, -5, 0],
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-gradient-to-br from-red-600/30 to-purple-600/30 dark:from-red-500/30 dark:to-purple-500/30 rounded-full blur-3xl"
+            />
+            <motion.div
+              animate={{
+                scale: [1.2, 1, 1.2],
+                rotate: [0, -5, 5, 0],
+              }}
+              transition={{
+                duration: 5,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: 0.5
+              }}
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-gradient-to-br from-indigo-600/30 to-blue-600/30 dark:from-indigo-500/30 dark:to-blue-500/30 rounded-full blur-2xl"
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.5 }}
+                className="text-center"
+              >
+                <Sparkles size={48} className="text-red-500 dark:text-red-400 mx-auto mb-2" />
+                <p className="text-[10px] font-black opacity-60 uppercase tracking-widest text-white dark:text-black">
+                  Unisciti alla Stanza
+                </p>
+              </motion.div>
+            </div>
+          </div>
+
           <div className="space-y-4">
             <label className="text-[10px] font-black opacity-40 uppercase tracking-widest px-1 block">
               Inserisci Codice Stanza
@@ -487,7 +536,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
               onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
               placeholder="ABC123"
               maxLength={6}
-              className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-black text-4xl text-center tracking-[0.2em] focus:outline-none focus:border-red-600/50 transition-colors uppercase"
+              className="w-full bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-black/30 rounded-2xl px-6 py-4 font-black text-4xl text-center tracking-[0.2em] focus:outline-none focus:border-red-600/50 dark:focus:border-red-500/50 focus:bg-white/15 dark:focus:bg-black/25 transition-all duration-300 uppercase shadow-lg"
               style={{ fontFamily: 'monospace' }}
             />
             <p className="text-[9px] font-black opacity-20 uppercase tracking-widest text-center">
@@ -589,7 +638,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
               }
             }}
             disabled={roomCode.length !== 6 || loading}
-            className="w-full py-6 bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 dark:from-blue-500 dark:via-indigo-600 dark:to-purple-700 text-white rounded-[32px] font-black text-xl italic uppercase tracking-widest shadow-2xl shadow-blue-600/30 dark:shadow-blue-500/30 active:scale-[0.96] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+            className="w-full py-6 bg-gradient-to-br from-blue-600 via-indigo-700 to-purple-800 dark:from-blue-500 dark:via-indigo-600 dark:to-purple-700 text-white rounded-[32px] font-black text-xl italic uppercase tracking-widest shadow-2xl shadow-blue-600/30 dark:shadow-blue-500/30 active:scale-[0.96] transition-all disabled:opacity-30 disabled:cursor-not-allowed sticky bottom-4 z-10"
           >
             {loading ? 'Caricamento...' : 'Entra in Stanza'}
           </HapticButton>
@@ -639,48 +688,72 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
               </div>
             )}
 
-            {/* Risultati come lista inline */}
-            {!isSearching && searchQuery.trim() && searchResults.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-[10px] font-black opacity-50 dark:opacity-60 uppercase tracking-widest px-2 text-white dark:text-black">
-                  Suggerimenti ({searchResults.length})
-                </p>
-                <div className="space-y-2">
-                  {searchResults.slice(0, 5).map(movie => (
-                    <HapticButton
-                      key={movie.id}
-                      onClick={() => {
-                        addMovieToManualList(movie);
-                        setSearchQuery('');
-                        setSearchResults([]);
-                      }}
-                      className="w-full bg-white/5 dark:bg-black/10 hover:bg-white/10 dark:hover:bg-black/20 p-3 rounded-[20px] flex items-center gap-3 border border-white/5 dark:border-black/20 active:scale-[0.98] transition-all duration-200 group"
-                    >
-                      {movie.poster ? (
-                        <img 
-                          src={movie.poster} 
-                          alt={movie.title} 
-                          className="w-12 h-18 object-cover rounded-lg shadow-lg"
-                        />
-                      ) : (
-                        <div className="w-12 h-18 bg-gradient-to-br from-red-600/20 to-purple-600/20 rounded-lg flex items-center justify-center">
-                          <span className="text-[8px] font-black opacity-50">No</span>
-                        </div>
-                      )}
-                      <div className="flex-1 text-left min-w-0">
-                        <h4 className="font-black text-sm truncate text-white dark:text-black">{movie.title}</h4>
-                        <div className="flex items-center gap-2 text-[10px] opacity-70 text-white dark:text-black">
-                          <span className="font-bold">{movie.year}</span>
-                          <span>•</span>
-                          <span className="text-yellow-500">★ {movie.rating}</span>
-                        </div>
-                      </div>
-                      <Check size={20} className="text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                    </HapticButton>
-                  ))}
-                </div>
-              </div>
-            )}
+            {/* Risultati come lista inline con animazione e posizionamento intelligente */}
+            <AnimatePresence>
+              {!isSearching && searchQuery.trim() && searchResults.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-2"
+                >
+                  <p className="text-[10px] font-black opacity-50 dark:opacity-60 uppercase tracking-widest px-2 text-white dark:text-black">
+                    Suggerimenti ({searchResults.length})
+                  </p>
+                  <div className="space-y-2 max-h-[40vh] overflow-y-auto no-scrollbar">
+                    {searchResults.slice(0, 5).map((movie, index) => (
+                      <motion.div
+                        key={movie.id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05, duration: 0.2 }}
+                      >
+                        <HapticButton
+                          onClick={() => {
+                            addMovieToManualList(movie);
+                            setSearchQuery('');
+                            setSearchResults([]);
+                            // Chiudi la tastiera virtuale
+                            if (document.activeElement instanceof HTMLElement) {
+                              document.activeElement.blur();
+                            }
+                          }}
+                          className="w-full bg-white/10 dark:bg-black/20 backdrop-blur-xl hover:bg-white/15 dark:hover:bg-black/30 p-3 rounded-[20px] flex items-center gap-3 border border-white/20 dark:border-black/30 active:scale-[0.98] transition-all duration-200 group shadow-lg"
+                        >
+                          {movie.poster ? (
+                            <img 
+                              src={movie.poster} 
+                              alt={movie.title} 
+                              className="w-12 h-18 object-cover rounded-lg shadow-lg"
+                            />
+                          ) : (
+                            <div className="w-12 h-18 bg-gradient-to-br from-red-600/20 to-purple-600/20 rounded-lg flex items-center justify-center">
+                              <span className="text-[8px] font-black opacity-50">No</span>
+                            </div>
+                          )}
+                          <div className="flex-1 text-left min-w-0">
+                            <h4 className="font-black text-sm truncate text-white dark:text-black">{movie.title}</h4>
+                            <div className="flex items-center gap-2 text-[10px] opacity-70 text-white dark:text-black">
+                              <span className="font-bold">{movie.year}</span>
+                              <span>•</span>
+                              <span className="text-yellow-500">★ {movie.rating}</span>
+                            </div>
+                          </div>
+                          <motion.div
+                            initial={{ scale: 0, opacity: 0 }}
+                            whileHover={{ scale: 1, opacity: 1 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <Check size={20} className="text-green-500" />
+                          </motion.div>
+                        </HapticButton>
+                      </motion.div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {!isSearching && searchQuery.trim() && searchResults.length === 0 && (
               <div className="p-4 text-center bg-white/5 dark:bg-black/10 rounded-[20px] border border-white/10 dark:border-black/20">
@@ -736,18 +809,60 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
 
       {step === 'lobby' && (
         <div className="flex-1 flex flex-col space-y-10 pb-10">
-          <div className="bg-[#1C1C1E] rounded-[48px] p-10 text-center space-y-6 border border-white/10 shadow-2xl relative overflow-hidden">
+          <div className="bg-white/5 dark:bg-black/20 backdrop-blur-2xl rounded-[48px] p-10 text-center space-y-6 border border-white/20 dark:border-black/30 shadow-2xl relative overflow-hidden">
+            {/* Effetti liquid glass */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-white/5 to-transparent dark:from-black/20 dark:via-black/10 dark:to-transparent rounded-[48px]" />
+            <div className="absolute top-0 left-0 w-32 h-32 bg-red-600/10 dark:bg-red-500/10 blur-3xl rounded-full -ml-16 -mt-16" />
+            <div className="absolute bottom-0 right-0 w-40 h-40 bg-purple-600/10 dark:bg-purple-500/10 blur-3xl rounded-full -mr-20 -mb-20" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-indigo-600/5 dark:bg-indigo-500/5 blur-2xl rounded-full" />
+            
             <div className="relative z-10">
-              <p className="text-[10px] font-black opacity-30 uppercase tracking-[0.5em] mb-3">Codice Accesso</p>
-              <h2 className="text-6xl font-black text-red-600 font-mono tracking-[0.1em]">{roomCode}</h2>
+              <p className="text-[10px] font-black opacity-40 dark:opacity-60 uppercase tracking-[0.5em] mb-3 text-white dark:text-black">Codice Accesso</p>
+              <h2 className="text-6xl font-black text-red-600 dark:text-red-500 font-mono tracking-[0.1em] drop-shadow-lg">{roomCode}</h2>
             </div>
-            <HapticButton 
-              onClick={() => navigator.share?.({ title: 'MovieMatch', text: `Entra nella mia stanza: ${roomCode}` })}
-              className="px-8 py-3 bg-white/5 rounded-full font-black uppercase text-[10px] tracking-widest flex items-center gap-2 mx-auto active:bg-white/10 transition-colors border border-white/5 relative z-10"
-            >
-              <Share size={14} /> Condividi Invito
-            </HapticButton>
-            <div className="absolute top-0 right-0 w-32 h-32 bg-red-600/5 blur-3xl rounded-full -mr-16 -mt-16" />
+            
+            <div className="flex flex-col gap-3 relative z-10">
+              <HapticButton 
+                onClick={async () => {
+                  try {
+                    // Copia solo il codice
+                    await navigator.clipboard.writeText(roomCode);
+                    alert('Codice copiato!');
+                  } catch (err) {
+                    console.error('Error copying:', err);
+                  }
+                }}
+                className="px-8 py-3 bg-white/10 dark:bg-black/20 backdrop-blur-xl rounded-full font-black uppercase text-[10px] tracking-widest flex items-center gap-2 mx-auto active:bg-white/15 dark:active:bg-black/30 transition-all border border-white/20 dark:border-black/30 shadow-lg"
+              >
+                <Copy size={14} /> Copia Codice
+              </HapticButton>
+              
+              <HapticButton 
+                onClick={async () => {
+                  try {
+                    // Condivisione SMS con solo il codice
+                    if (navigator.share) {
+                      await navigator.share({
+                        text: roomCode
+                      });
+                    } else {
+                      // Fallback: copia e mostra messaggio SMS
+                      await navigator.clipboard.writeText(roomCode);
+                      const smsLink = `sms:?body=${encodeURIComponent(roomCode)}`;
+                      window.location.href = smsLink;
+                    }
+                  } catch (err) {
+                    // Se l'utente annulla la condivisione, non fare nulla
+                    if (err instanceof Error && err.name !== 'AbortError') {
+                      console.error('Error sharing:', err);
+                    }
+                  }
+                }}
+                className="px-8 py-3 bg-white/10 dark:bg-black/20 backdrop-blur-xl rounded-full font-black uppercase text-[10px] tracking-widest flex items-center gap-2 mx-auto active:bg-white/15 dark:active:bg-black/30 transition-all border border-white/20 dark:border-black/30 shadow-lg"
+              >
+                <MessageSquare size={14} /> Invia SMS
+              </HapticButton>
+            </div>
           </div>
 
           <div className="flex-1 space-y-5">

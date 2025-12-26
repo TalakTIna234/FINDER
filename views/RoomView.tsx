@@ -662,8 +662,8 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
 
       {step === 'manual' && (
         <div className="flex-1 flex flex-col space-y-4 pb-40 overflow-y-auto">
-          {/* Barra di ricerca */}
-          <div className="space-y-3">
+          {/* Barra di ricerca - sticky per evitare interferenza con tastiera */}
+          <div className="space-y-3 sticky top-0 z-20 bg-black/80 dark:bg-white/80 backdrop-blur-xl pb-2 -mx-6 px-6 pt-2">
             <div className="relative">
               <Search size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/40 dark:text-black/40 z-10" />
               <input
@@ -672,6 +672,12 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Cerca film..."
                 className="w-full bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-black/30 rounded-[24px] pl-14 pr-5 py-4 font-bold text-sm focus:outline-none focus:border-red-600/50 dark:focus:border-red-500/50 focus:bg-white/15 dark:focus:bg-black/25 transition-all duration-300 text-white dark:text-black placeholder:text-white/30 dark:placeholder:text-black/50 shadow-lg"
+                onFocus={() => {
+                  // Scrolla leggermente in alto quando la tastiera si apre
+                  setTimeout(() => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }, 300);
+                }}
               />
               {isSearching && (
                 <div className="absolute right-5 top-1/2 -translate-y-1/2">

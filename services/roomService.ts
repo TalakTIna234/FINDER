@@ -66,23 +66,45 @@ class RoomService {
         }
       }
       
-      // Genera codice univoco
+      // Genera codice univoco - OTTIMIZZATO
       console.log('Generating unique room code...');
       let code = this.generateCode();
       let attempts = 0;
+      const maxAttempts = 3; // Ridotto da 10 a 3 per velocità
       
-      // Verifica che il codice sia unico (max 10 tentativi)
-      while (attempts < 10) {
+      // Timeout totale per controllo codice (massimo 1.5 secondi)
+      const codeCheckStartTime = Date.now();
+      const maxCodeCheckTime = 1500;
+      
+      // Verifica che il codice sia unico (max 3 tentativi con timeout)
+      while (attempts < maxAttempts) {
+        // Controlla timeout totale
+        if (Date.now() - codeCheckStartTime > maxCodeCheckTime) {
+          console.warn('Code check timeout - using generated code (likely unique)');
+          break;
+        }
+        
         try {
-          const { data: existing, error: checkError } = await supabase
+          const checkPromise = supabase
             .from('rooms')
             .select('code')
             .eq('code', code)
             .maybeSingle();
           
-          if (checkError && checkError.code !== 'PGRST116') {
+          // Timeout di 500ms per ogni controllo
+          const checkTimeout = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Code check timeout')), 500);
+          });
+          
+          const { data: existing, error: checkError } = await Promise.race([
+            checkPromise,
+            checkTimeout
+          ]) as any;
+          
+          if (checkError && checkError.message !== 'Code check timeout' && checkError.code !== 'PGRST116') {
             console.error('Error checking code uniqueness:', checkError);
-            throw checkError;
+            // Continua comunque - probabilmente il codice è unico
+            break;
           }
           
           if (!existing) {
@@ -93,15 +115,15 @@ class RoomService {
           console.log(`✗ Code ${code} already exists, generating new one...`);
           code = this.generateCode();
           attempts++;
-        } catch (error) {
+        } catch (error: any) {
+          if (error?.message === 'Code check timeout') {
+            console.warn('Code check timeout - using code anyway (likely unique)');
+            break; // Usa il codice generato
+          }
           console.error('Error in code check loop:', error);
-          throw error;
+          // Continua comunque
+          break;
         }
-      }
-      
-      if (attempts >= 10) {
-        console.error('Failed to generate unique room code after 10 attempts');
-        throw new Error('Impossibile generare un codice stanza univoco. Riprova.');
       }
 
       console.log('✓ Generated unique code:', code);

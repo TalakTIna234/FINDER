@@ -54,6 +54,11 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       roomService.getRoom(roomCode).then(currentRoom => {
         if (currentRoom) {
           setRoom(currentRoom);
+          // Se la stanza è già in playing, avvia la sessione
+          if (currentRoom.status === 'playing' && currentRoom.movies.length > 0) {
+            console.log('[RoomView] Room is already playing - starting session automatically');
+            onStartSession(currentRoom.movies);
+          }
         }
       });
 
@@ -66,6 +71,12 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
           unsubscribe = roomService.subscribeToRoom(roomCode, (updatedRoom) => {
             if (updatedRoom) {
               setRoom(updatedRoom);
+              
+              // Se lo status è cambiato a 'playing', avvia la sessione per tutti i membri
+              if (updatedRoom.status === 'playing' && updatedRoom.movies.length > 0) {
+                console.log('[RoomView] Room status changed to playing - starting session for all members');
+                onStartSession(updatedRoom.movies);
+              }
             }
           });
         }
@@ -75,7 +86,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         if (unsubscribe) unsubscribe();
       };
     }
-  }, [roomCode, step]);
+  }, [roomCode, step, onStartSession]);
 
   const handleSelectGenre = async (genreId: number) => {
     setLoading(true);

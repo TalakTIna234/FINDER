@@ -465,6 +465,27 @@ class RoomService {
     }
   }
 
+  async updateRoomMovies(code: string, movies: Movie[]): Promise<boolean> {
+    try {
+      console.log(`[Background] Updating room ${code} with ${movies.length} movies from TMDB...`);
+      const { error } = await supabase
+        .from('rooms')
+        .update({ movies: movies as any })
+        .eq('code', code.toUpperCase());
+      
+      if (error) {
+        console.error('[Background] Error updating room movies:', error);
+        return false;
+      }
+      
+      console.log(`[Background] ✓ Room ${code} updated with TMDB movies`);
+      return true;
+    } catch (error) {
+      console.error('[Background] Exception updating room movies:', error);
+      return false;
+    }
+  }
+
   // Sottoscrizione real-time per aggiornamenti stanza
   subscribeToRoom(code: string, callback: (room: Room | null) => void) {
     let roomId: string | null = null;

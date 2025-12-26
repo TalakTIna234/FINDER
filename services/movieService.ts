@@ -60,12 +60,12 @@ export const movieService = {
           console.log(`[TMDB] Attempt ${attempt + 1}/5: Genre ${validGenre.name} (ID: ${genreId}), Page ${page}, Sort: ${randomSort}`);
           console.log(`[TMDB] URL: ${url.replace(TMDB_ACCESS_TOKEN, '***')}`);
           
-          // Crea un AbortController per timeout
+          // Crea un AbortController per timeout - ridotto a 10 secondi per mobile
           const controller = new AbortController();
           const timeoutId = setTimeout(() => {
-            console.error(`[TMDB] Timeout after 15 seconds on attempt ${attempt + 1}`);
+            console.error(`[TMDB] Timeout after 10 seconds on attempt ${attempt + 1}`);
             controller.abort();
-          }, 15000); // 15 secondi timeout
+          }, 10000); // 10 secondi timeout per mobile
           
           try {
             const response = await fetch(url, { 

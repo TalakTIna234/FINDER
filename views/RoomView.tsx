@@ -80,14 +80,14 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
     setLoading(true);
     let timeoutCleared = false;
     
-    // Timeout di sicurezza - se passa più di 30 secondi, mostra errore
+    // Timeout di sicurezza - ridotto a 20 secondi per mobile
     const timeoutId = setTimeout(() => {
       if (!timeoutCleared) {
-        console.error('Timeout: handleSelectGenre took more than 30 seconds');
+        console.error('Timeout: handleSelectGenre took more than 20 seconds');
         alert('Il caricamento sta impiegando troppo tempo. Controlla la console per dettagli. Verifica che:\n1. Il token TMDB sia configurato\n2. Le tabelle rooms e room_members siano state create in Supabase\n3. La connessione internet sia attiva');
         setLoading(false);
       }
-    }, 30000);
+    }, 20000);
     
     try {
       console.log('=== STARTING GENRE SELECTION ===');
@@ -452,7 +452,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       </header>
 
       {step === 'type' && (
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-5 pb-20">
            <HapticButton 
             onClick={() => setStep('genre')}
             className="p-8 bg-[#1C1C1E] dark:bg-gray-100 rounded-[40px] border border-white/10 dark:border-black/20 flex items-center gap-6 active:scale-[0.97] transition-all"
@@ -604,96 +604,95 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       )}
 
       {step === 'genre' && (
-        <div className="grid grid-cols-2 gap-4 pb-32 overflow-y-auto no-scrollbar">
+        <div className="grid grid-cols-2 gap-3 pb-40 overflow-y-auto no-scrollbar">
           {GENRES.map(g => (
             <HapticButton 
               key={g.id}
               onClick={() => handleSelectGenre(g.id)}
-              className="bg-[#1C1C1E] p-8 rounded-[40px] flex flex-col items-center gap-4 border border-white/5 ios-card-shadow active:scale-95 transition-all"
+              className="bg-[#1C1C1E] dark:bg-gray-100 p-6 rounded-[32px] flex flex-col items-center gap-3 border border-white/5 dark:border-black/20 ios-card-shadow active:scale-95 transition-all"
             >
-              <span className="text-5xl drop-shadow-lg">{g.icon}</span>
-              <span className="font-black uppercase italic text-xs tracking-[0.1em]">{g.name}</span>
+              <span className="text-4xl drop-shadow-lg">{g.icon}</span>
+              <span className="font-black uppercase italic text-xs tracking-[0.1em] text-white dark:text-black">{g.name}</span>
             </HapticButton>
           ))}
         </div>
       )}
 
       {step === 'manual' && (
-        <div className="flex-1 flex flex-col space-y-6 pb-32 overflow-y-auto">
-          {/* Barra di ricerca con dropdown */}
-          <div className="space-y-4 relative">
+        <div className="flex-1 flex flex-col space-y-4 pb-40 overflow-y-auto">
+          {/* Barra di ricerca */}
+          <div className="space-y-3">
             <div className="relative">
               <Search size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/40 dark:text-black/40 z-10" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cerca film... (ricerca automatica)"
+                placeholder="Cerca film..."
                 className="w-full bg-white/10 dark:bg-black/20 backdrop-blur-xl border border-white/20 dark:border-black/30 rounded-[24px] pl-14 pr-5 py-4 font-bold text-sm focus:outline-none focus:border-red-600/50 dark:focus:border-red-500/50 focus:bg-white/15 dark:focus:bg-black/25 transition-all duration-300 text-white dark:text-black placeholder:text-white/30 dark:placeholder:text-black/50 shadow-lg"
               />
               {isSearching && (
                 <div className="absolute right-5 top-1/2 -translate-y-1/2">
-                  <div className="w-5 h-5 border-2 border-white/20 border-t-red-600 rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-white/20 dark:border-black/20 border-t-red-600 dark:border-t-red-500 rounded-full animate-spin" />
                 </div>
               )}
             </div>
 
-            {/* Dropdown risultati elegante */}
-            {searchQuery.trim() && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white/10 backdrop-blur-2xl rounded-[24px] border border-white/20 shadow-2xl z-50 max-h-96 overflow-y-auto">
-                {isSearching ? (
-                  <div className="p-8 text-center">
-                    <div className="w-8 h-8 border-2 border-white/20 border-t-red-600 rounded-full animate-spin mx-auto mb-3" />
-                    <p className="text-xs font-black opacity-40 uppercase tracking-widest">Ricerca in corso...</p>
-                  </div>
-                ) : searchResults.length > 0 ? (
-                  <div className="p-2 space-y-1">
-                    {searchResults.map(movie => (
-                      <HapticButton
-                        key={movie.id}
-                        onClick={() => addMovieToManualList(movie)}
-                        className="w-full bg-white/5 hover:bg-white/10 p-4 rounded-[20px] flex items-center gap-4 border border-white/5 active:scale-[0.98] transition-all duration-200 group"
-                      >
-                        {movie.poster ? (
-                          <img 
-                            src={movie.poster} 
-                            alt={movie.title} 
-                            className="w-16 h-24 object-cover rounded-xl shadow-lg group-hover:scale-105 transition-transform"
-                          />
-                        ) : (
-                          <div className="w-16 h-24 bg-gradient-to-br from-red-600/20 to-purple-600/20 rounded-xl flex items-center justify-center">
-                            <span className="text-xs font-black opacity-50">No Image</span>
-                          </div>
-                        )}
-                        <div className="flex-1 text-left min-w-0">
-                          <h4 className="font-black text-sm truncate mb-1">{movie.title}</h4>
-                          <div className="flex items-center gap-3 text-[10px] opacity-70">
-                            <span className="font-bold">{movie.year}</span>
-                            <span>•</span>
-                            <div className="flex items-center gap-1">
-                              <span className="text-yellow-500">★</span>
-                              <span className="font-bold">{movie.rating}/10</span>
-                            </div>
-                            {movie.genres && movie.genres.length > 0 && (
-                              <>
-                                <span>•</span>
-                                <span className="truncate">{movie.genres[0]}</span>
-                              </>
-                            )}
-                          </div>
+            {/* Suggerimenti inline invece di dropdown */}
+            {isSearching && (
+              <div className="p-4 text-center bg-white/5 dark:bg-black/10 rounded-[20px] border border-white/10 dark:border-black/20">
+                <div className="w-6 h-6 border-2 border-white/20 dark:border-black/20 border-t-red-600 dark:border-t-red-500 rounded-full animate-spin mx-auto mb-2" />
+                <p className="text-xs font-black opacity-60 dark:opacity-70 uppercase tracking-widest text-white dark:text-black">Ricerca in corso...</p>
+              </div>
+            )}
+
+            {/* Risultati come lista inline */}
+            {!isSearching && searchQuery.trim() && searchResults.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[10px] font-black opacity-50 dark:opacity-60 uppercase tracking-widest px-2 text-white dark:text-black">
+                  Suggerimenti ({searchResults.length})
+                </p>
+                <div className="space-y-2">
+                  {searchResults.slice(0, 5).map(movie => (
+                    <HapticButton
+                      key={movie.id}
+                      onClick={() => {
+                        addMovieToManualList(movie);
+                        setSearchQuery('');
+                        setSearchResults([]);
+                      }}
+                      className="w-full bg-white/5 dark:bg-black/10 hover:bg-white/10 dark:hover:bg-black/20 p-3 rounded-[20px] flex items-center gap-3 border border-white/5 dark:border-black/20 active:scale-[0.98] transition-all duration-200 group"
+                    >
+                      {movie.poster ? (
+                        <img 
+                          src={movie.poster} 
+                          alt={movie.title} 
+                          className="w-12 h-18 object-cover rounded-lg shadow-lg"
+                        />
+                      ) : (
+                        <div className="w-12 h-18 bg-gradient-to-br from-red-600/20 to-purple-600/20 rounded-lg flex items-center justify-center">
+                          <span className="text-[8px] font-black opacity-50">No</span>
                         </div>
-                        <div className="text-green-500 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Check size={24} />
+                      )}
+                      <div className="flex-1 text-left min-w-0">
+                        <h4 className="font-black text-sm truncate text-white dark:text-black">{movie.title}</h4>
+                        <div className="flex items-center gap-2 text-[10px] opacity-70 text-white dark:text-black">
+                          <span className="font-bold">{movie.year}</span>
+                          <span>•</span>
+                          <span className="text-yellow-500">★ {movie.rating}</span>
                         </div>
-                      </HapticButton>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-8 text-center">
-                    <p className="text-xs font-black opacity-40 uppercase tracking-widest">Nessun risultato trovato</p>
-                    <p className="text-[10px] font-black opacity-20 mt-2">Prova con un altro titolo</p>
-                  </div>
-                )}
+                      </div>
+                      <Check size={20} className="text-green-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </HapticButton>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {!isSearching && searchQuery.trim() && searchResults.length === 0 && (
+              <div className="p-4 text-center bg-white/5 dark:bg-black/10 rounded-[20px] border border-white/10 dark:border-black/20">
+                <p className="text-xs font-black opacity-60 dark:opacity-70 uppercase tracking-widest text-white dark:text-black">Nessun risultato</p>
+                <p className="text-[10px] font-black opacity-40 dark:opacity-50 mt-1 text-white dark:text-black">Prova con un altro titolo</p>
               </div>
             )}
           </div>
@@ -729,14 +728,16 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
             </div>
           )}
 
-          {/* Pulsante crea stanza */}
-          <HapticButton
-            onClick={handleCreateManualRoom}
-            disabled={manualMovies.length === 0 || loading}
-            className="w-full py-6 bg-gradient-to-br from-red-600 via-purple-700 to-indigo-800 dark:from-red-500 dark:via-purple-600 dark:to-indigo-700 text-white rounded-[32px] font-black text-xl italic uppercase tracking-widest shadow-2xl shadow-purple-600/30 dark:shadow-purple-500/30 disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.96] transition-all"
-          >
-            {loading ? 'Creazione...' : `Crea Stanza (${manualMovies.length} film)`}
-          </HapticButton>
+          {/* Pulsante crea stanza - sticky per mobile */}
+          <div className="sticky bottom-0 pt-4 bg-gradient-to-t from-black via-black to-transparent dark:from-white dark:via-white pb-4 -mx-6 px-6 mt-4">
+            <HapticButton
+              onClick={handleCreateManualRoom}
+              disabled={manualMovies.length === 0 || loading}
+              className="w-full py-5 bg-gradient-to-br from-red-600 via-purple-700 to-indigo-800 dark:from-red-500 dark:via-purple-600 dark:to-indigo-700 text-white rounded-[32px] font-black text-lg italic uppercase tracking-widest shadow-2xl shadow-purple-600/30 dark:shadow-purple-500/30 disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.96] transition-all"
+            >
+              {loading ? 'Creazione...' : `Crea Stanza (${manualMovies.length} film)`}
+            </HapticButton>
+          </div>
         </div>
       )}
 

@@ -561,13 +561,29 @@ const App: React.FC = () => {
                    
                    {/* Email Login - Stile Liquid Glass */}
                    <HapticButton 
-                    onClick={() => setShowEmailAuth(true)}
+                    onClick={() => {
+                      setShowEmailAuth(true);
+                      setIsSignUp(false); // Imposta in modalità login
+                    }}
                     className="group relative w-full py-5 bg-white/5 dark:bg-black/10 backdrop-blur-2xl border border-white/20 dark:border-black/30 rounded-[24px] font-black text-base text-white dark:text-black flex items-center justify-center gap-3 active:scale-[0.97] transition-all duration-300 shadow-xl shadow-black/20 dark:shadow-white/20 hover:bg-white/10 dark:hover:bg-black/20 hover:border-white/30 dark:hover:border-black/40 overflow-hidden"
                    >
                      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent dark:from-black/5 dark:to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                      <Mail size={22} className="relative z-10" /> 
                      <span className="relative z-10">Accedi con Email</span>
                    </HapticButton>
+                   
+                   {/* Link piccolo per registrazione */}
+                   <div className="text-center pt-2">
+                     <button
+                       onClick={() => {
+                         setShowEmailAuth(true);
+                         setIsSignUp(true); // Imposta in modalità registrazione
+                       }}
+                       className="text-[9px] font-black opacity-50 dark:opacity-60 hover:opacity-100 transition-opacity uppercase tracking-widest text-white dark:text-black"
+                     >
+                       Non hai un account? <span className="text-red-500 dark:text-red-400">Registrati</span>
+                     </button>
+                   </div>
                  </div>
                ) : (
                  <div className="space-y-5">
@@ -765,9 +781,13 @@ const App: React.FC = () => {
                    
                    <button
                      onClick={() => setIsSignUp(!isSignUp)}
-                     className="w-full text-center text-[10px] font-black opacity-50 dark:opacity-70 hover:opacity-100 transition-opacity py-2 px-4 rounded-full bg-white/5 dark:bg-black/10 border border-white/10 dark:border-black/20 hover:bg-white/10 dark:hover:bg-black/20 text-white dark:text-black"
+                     className="w-full text-center text-[9px] font-black opacity-50 dark:opacity-60 hover:opacity-100 transition-opacity py-2 px-4 rounded-full bg-white/5 dark:bg-black/10 border border-white/10 dark:border-black/20 hover:bg-white/10 dark:hover:bg-black/20 text-white dark:text-black uppercase tracking-widest"
                    >
-                     {isSignUp ? 'Hai già un account? Accedi' : 'Non hai un account? Registrati'}
+                     {isSignUp ? (
+                       <>Hai già un account? <span className="text-red-500 dark:text-red-400">Accedi</span></>
+                     ) : (
+                       <>Non hai un account? <span className="text-red-500 dark:text-red-400">Registrati</span></>
+                     )}
                    </button>
                  </div>
                )}

@@ -346,16 +346,50 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
     }
     
     setLoading(true);
+    let timeoutCleared = false;
+    
+    // Timeout totale di 5 secondi per la creazione stanza manuale
+    const timeoutId = setTimeout(() => {
+      if (!timeoutCleared) {
+        console.error('Timeout: handleCreateManualRoom took more than 5 seconds');
+        alert('La creazione della stanza sta impiegando troppo tempo. Verifica la connessione internet e riprova.');
+        setLoading(false);
+      }
+    }, 5000);
     
     // Flag per controllare se il componente è ancora montato
     let isMounted = true;
     
     try {
-      let user = await authService.getCurrentUser();
+      console.log('[Manual Room] Starting room creation...');
+      const startTime = Date.now();
       
-      if (!isMounted) return;
+      // Ottimizza getCurrentUser con timeout
+      console.log('[Manual Room] Checking authentication...');
+      let user: any = null;
+      try {
+        const userPromise = authService.getCurrentUser();
+        const userTimeout = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Auth check timeout')), 2000);
+        });
+        
+        user = await Promise.race([userPromise, userTimeout]);
+      } catch (authError: any) {
+        if (authError?.message === 'Auth check timeout') {
+          console.warn('[Manual Room] Auth check timeout - using guest');
+        } else {
+          console.warn('[Manual Room] Auth check error:', authError);
+        }
+      }
+      
+      if (!isMounted) {
+        timeoutCleared = true;
+        clearTimeout(timeoutId);
+        return;
+      }
       
       if (!user) {
+        console.log('[Manual Room] Using guest user');
         let guestId = localStorage.getItem('mm_guest_id');
         if (!guestId) {
           guestId = generateUUID();
@@ -375,20 +409,35 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         };
       }
       
-      if (!isMounted) return;
+      if (!isMounted) {
+        timeoutCleared = true;
+        clearTimeout(timeoutId);
+        return;
+      }
       
+      console.log('[Manual Room] Creating room in Supabase...');
+      const roomStartTime = Date.now();
       const newRoom = await roomService.createRoom(user.id, user.nickname, manualMovies);
+      const roomTime = Date.now() - roomStartTime;
+      console.log(`[Manual Room] Room created in ${roomTime}ms`);
       
       if (!isMounted) {
+        timeoutCleared = true;
+        clearTimeout(timeoutId);
         setLoading(false);
         return;
       }
       
       if (!newRoom) {
+        timeoutCleared = true;
+        clearTimeout(timeoutId);
         alert('Errore nella creazione della stanza');
         setLoading(false);
         return;
       }
+      
+      const totalTime = Date.now() - startTime;
+      console.log(`[Manual Room] ✓ Total time: ${totalTime}ms`);
       
       setRoomCode(newRoom.code);
       setRoom(newRoom);
@@ -398,12 +447,17 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         console.warn('Error incrementing stats (non-critical):', err);
       });
       
+      timeoutCleared = true;
+      clearTimeout(timeoutId);
       setLoading(false);
       setStep('lobby');
     } catch (error) {
+      timeoutCleared = true;
+      clearTimeout(timeoutId);
+      
       if (!isMounted) return;
       
-      console.error('Error creating manual room:', error);
+      console.error('[Manual Room] Error creating room:', error);
       
       // Ignora errori di navigazione/chiusura browser
       if (error instanceof Error && error.message.includes('browsing context')) {

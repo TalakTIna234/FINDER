@@ -974,7 +974,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
              })}
           </div>
 
-          <footer>
+          <div className="sticky bottom-0 pt-4 bg-gradient-to-t from-black via-black to-transparent dark:from-white dark:via-white pb-6 -mx-6 px-6 z-10">
             <HapticButton 
               onClick={startSession}
               className="group w-full py-6 bg-gradient-to-br from-red-600 via-purple-700 to-indigo-800 dark:from-red-500 dark:via-purple-600 dark:to-indigo-700 text-white rounded-[32px] font-black text-xl italic uppercase tracking-widest shadow-2xl shadow-purple-600/30 dark:shadow-purple-500/30 active:scale-[0.96] transition-all relative overflow-hidden"
@@ -985,7 +985,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                 Inizia Match
               </div>
             </HapticButton>
-          </footer>
+          </div>
         </div>
       )}
     </div>

@@ -322,13 +322,17 @@ const App: React.FC = () => {
     };
   }, []);
 
-  // Refresh profilo quando si cambia tab al profilo
+  // Refresh profilo quando si cambia tab al profilo - SEMPRE controlla autenticazione
   useEffect(() => {
-    if (activeTab === 'profile' && !isGuest) {
+    if (activeTab === 'profile') {
       const refreshProfile = async () => {
         try {
+          console.log('[Profile] Checking authentication...');
           const user = await authService.getCurrentUser();
+          console.log('[Profile] User:', user ? `${user.id} - ${user.nickname}` : 'null');
+          
           if (user) {
+            console.log('[Profile] User authenticated, loading profile data...');
             setIsGuest(false);
             setNickname(user.nickname);
             setAvatarUrl(user.avatar_url || null);
@@ -336,22 +340,43 @@ const App: React.FC = () => {
             const profile = await profileService.getCurrentProfile();
             if (profile) {
               setBio(profile.bio || '');
+              console.log('[Profile] Profile loaded:', profile.nickname);
             }
             
             const dbPlaylist = await playlistService.getPlaylist();
             if (dbPlaylist.length > 0) {
               setLikedMovies(dbPlaylist);
+              console.log('[Profile] Playlist loaded:', dbPlaylist.length, 'movies');
             }
             
             const stats = await statsService.getStats();
-            if (stats) setUserStats(stats);
+            if (stats) {
+              setUserStats(stats);
+              console.log('[Profile] Stats loaded');
+            }
             
             setCurrentUserId(user.id);
+            console.log('[Profile] ✓ Profile refresh completed');
           } else {
+            console.log('[Profile] No user found, setting as guest');
             setIsGuest(true);
           }
         } catch (error) {
-          console.error('Error refreshing profile:', error);
+          console.error('[Profile] Error refreshing profile:', error);
+          // In caso di errore, controlla comunque se c'è una sessione
+          try {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session?.user) {
+              console.log('[Profile] Found session, user is authenticated');
+              setIsGuest(false);
+            } else {
+              console.log('[Profile] No session found, user is guest');
+              setIsGuest(true);
+            }
+          } catch (sessionError) {
+            console.error('[Profile] Error checking session:', sessionError);
+            setIsGuest(true);
+          }
         }
       };
       

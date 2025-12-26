@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { HapticButton } from '../components/HapticButton';
-import { ChevronLeft, Share, Play, Users, Search, List, Wand2, Sparkles } from 'lucide-react';
+import { ChevronLeft, Share, Play, Users, Search, List, Wand2, Sparkles, Check, X } from 'lucide-react';
 import { GENRES } from '../constants';
 import { Movie } from '../types';
 import { movieService } from '../services/movieService';
@@ -9,6 +9,19 @@ import { roomService, Room } from '../services/roomService';
 import { authService } from '../services/authService';
 import { statsService } from '../services/statsService';
 import { useState as useRoomState, useEffect as useRoomEffect } from 'react';
+
+// Funzione per generare UUID v4 valido
+function generateUUID(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  // Fallback per browser che non supportano crypto.randomUUID
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
 
 interface Props {
   onBack: () => void;
@@ -22,6 +35,12 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
   const [loading, setLoading] = useState(false);
   const [room, setRoom] = useState<Room | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  
+  // Stati per modalità manuale
+  const [manualMovies, setManualMovies] = useState<Movie[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Movie[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     // Carica user ID
@@ -86,21 +105,41 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         return;
       }
       
-      // Verifica autenticazione
+      // Verifica autenticazione o crea guest ID
       console.log('[2/4] Checking authentication...');
       const authStartTime = Date.now();
-      const user = await authService.getCurrentUser();
+      let user = await authService.getCurrentUser();
       const authTime = Date.now() - authStartTime;
       console.log(`[2/4] Auth check completed in ${authTime}ms`);
       
+      // Se non autenticato, usa guest ID temporaneo
       if (!user) {
-        clearTimeout(timeoutId);
-        console.error('User not authenticated');
-        alert('Devi essere autenticato per creare una stanza. Effettua il login.');
-        setLoading(false);
-        return;
+        console.log('User not authenticated - using guest ID');
+        // Genera o recupera guest ID (deve essere un UUID valido)
+        let guestId = localStorage.getItem('mm_guest_id');
+        if (!guestId) {
+          // Genera un UUID v4 valido per guest
+          guestId = generateUUID();
+          localStorage.setItem('mm_guest_id', guestId);
+        }
+        
+        // Genera o recupera guest nickname
+        let guestNickname = localStorage.getItem('mm_guest_nickname');
+        if (!guestNickname) {
+          guestNickname = 'Guest_' + Math.floor(Math.random() * 10000);
+          localStorage.setItem('mm_guest_nickname', guestNickname);
+        }
+        
+        // Crea oggetto user temporaneo per guest
+        user = {
+          id: guestId,
+          nickname: guestNickname,
+          provider: 'email' as const
+        };
+        console.log('Using guest user:', user.id, user.nickname);
+      } else {
+        console.log('User authenticated:', user.id, user.nickname);
       }
-      console.log('User authenticated:', user.id, user.nickname);
       
       // Crea stanza
       console.log('[3/4] Creating room in Supabase...');
@@ -191,6 +230,93 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
     }
   };
 
+  // Funzioni per modalità manuale
+  const handleManualSearch = async () => {
+    if (!searchQuery.trim()) return;
+    
+    setIsSearching(true);
+    try {
+      const results = await movieService.searchMovies(searchQuery);
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Error searching movies:', error);
+      alert('Errore nella ricerca film');
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const addMovieToManualList = (movie: Movie) => {
+    if (manualMovies.find(m => m.id === movie.id)) {
+      alert('Film già aggiunto');
+      return;
+    }
+    setManualMovies([...manualMovies, movie]);
+    setSearchQuery('');
+    setSearchResults([]);
+  };
+
+  const removeMovieFromManualList = (movieId: number) => {
+    setManualMovies(manualMovies.filter(m => m.id !== movieId));
+  };
+
+  const handleCreateManualRoom = async () => {
+    if (manualMovies.length === 0) {
+      alert('Aggiungi almeno un film prima di creare la stanza');
+      return;
+    }
+    
+    setLoading(true);
+    
+    try {
+      let user = await authService.getCurrentUser();
+      
+      if (!user) {
+        let guestId = localStorage.getItem('mm_guest_id');
+        if (!guestId) {
+          guestId = generateUUID();
+          localStorage.setItem('mm_guest_id', guestId);
+        }
+        
+        let guestNickname = localStorage.getItem('mm_guest_nickname');
+        if (!guestNickname) {
+          guestNickname = 'Guest_' + Math.floor(Math.random() * 10000);
+          localStorage.setItem('mm_guest_nickname', guestNickname);
+        }
+        
+        user = {
+          id: guestId,
+          nickname: guestNickname,
+          provider: 'email' as const
+        };
+      }
+      
+      const newRoom = await roomService.createRoom(user.id, user.nickname, manualMovies);
+      
+      if (!newRoom) {
+        alert('Errore nella creazione della stanza');
+        setLoading(false);
+        return;
+      }
+      
+      setRoomCode(newRoom.code);
+      setRoom(newRoom);
+      
+      try {
+        await statsService.increment('rooms_created');
+      } catch (statsError) {
+        console.warn('Error incrementing stats (non-critical):', statsError);
+      }
+      
+      setLoading(false);
+      setStep('lobby');
+    } catch (error) {
+      console.error('Error creating manual room:', error);
+      alert('Errore nella creazione della stanza: ' + (error instanceof Error ? error.message : 'Errore sconosciuto'));
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="h-full flex flex-col items-center justify-center space-y-8 bg-black">
@@ -230,13 +356,18 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
            </HapticButton>
 
            <HapticButton 
-            onClick={() => setStep('manual')}
-            className="p-8 bg-gray-950 rounded-[40px] border border-white/5 flex items-center gap-6 opacity-40 grayscale pointer-events-none"
+            onClick={() => {
+              setStep('manual');
+              setManualMovies([]);
+              setSearchQuery('');
+              setSearchResults([]);
+            }}
+            className="p-8 bg-[#1C1C1E] rounded-[40px] border border-white/10 flex items-center gap-6 active:scale-[0.97] transition-all"
            >
-              <div className="p-5 bg-white/5 rounded-3xl text-white/50"><List size={32}/></div>
-              <div className="text-left">
+              <div className="p-5 bg-gradient-to-br from-blue-600 to-cyan-700 rounded-3xl text-white shadow-xl"><List size={32}/></div>
+              <div className="text-left flex-1">
                 <h3 className="text-xl font-black italic uppercase tracking-tight">Manuale</h3>
-                <p className="text-[10px] font-bold opacity-30 mt-1 uppercase tracking-widest">Prossimamente</p>
+                <p className="text-[10px] font-bold opacity-30 mt-1 uppercase tracking-widest">Cerca e seleziona</p>
               </div>
            </HapticButton>
         </div>
@@ -273,16 +404,38 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
               try {
                 console.log('Joining room with code:', roomCode);
                 
-                // Verifica autenticazione
+                // Verifica autenticazione o crea guest ID
                 console.log('Checking authentication...');
-                const user = await authService.getCurrentUser();
+                let user = await authService.getCurrentUser();
+                
+                // Se non autenticato, usa guest ID temporaneo
                 if (!user) {
-                  console.error('User not authenticated');
-                  alert('Devi essere autenticato per entrare in una stanza. Effettua il login.');
-                  setLoading(false);
-                  return;
+                  console.log('User not authenticated - using guest ID');
+                  // Genera o recupera guest ID (deve essere un UUID valido)
+                  let guestId = localStorage.getItem('mm_guest_id');
+                  if (!guestId) {
+                    // Genera un UUID v4 valido per guest
+                    guestId = generateUUID();
+                    localStorage.setItem('mm_guest_id', guestId);
+                  }
+                  
+                  // Genera o recupera guest nickname
+                  let guestNickname = localStorage.getItem('mm_guest_nickname');
+                  if (!guestNickname) {
+                    guestNickname = 'Guest_' + Math.floor(Math.random() * 10000);
+                    localStorage.setItem('mm_guest_nickname', guestNickname);
+                  }
+                  
+                  // Crea oggetto user temporaneo per guest
+                  user = {
+                    id: guestId,
+                    nickname: guestNickname,
+                    provider: 'email' as const
+                  };
+                  console.log('Using guest user:', user.id, user.nickname);
+                } else {
+                  console.log('User authenticated:', user.id);
                 }
-                console.log('User authenticated:', user.id);
                 
                 // Verifica che la stanza esista
                 console.log('Checking if room exists...');
@@ -353,6 +506,98 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
               <span className="font-black uppercase italic text-xs tracking-[0.1em]">{g.name}</span>
             </HapticButton>
           ))}
+        </div>
+      )}
+
+      {step === 'manual' && (
+        <div className="flex-1 flex flex-col space-y-6 pb-32 overflow-y-auto">
+          {/* Barra di ricerca */}
+          <div className="space-y-4">
+            <div className="flex gap-3">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleManualSearch()}
+                placeholder="Cerca film..."
+                className="flex-1 bg-white/5 border border-white/10 rounded-2xl px-6 py-4 font-bold text-sm focus:outline-none focus:border-red-600/50 transition-colors"
+              />
+              <HapticButton
+                onClick={handleManualSearch}
+                disabled={!searchQuery.trim() || isSearching}
+                className="px-6 py-4 bg-gradient-to-br from-red-600 to-purple-700 rounded-2xl font-black text-sm uppercase tracking-widest disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center"
+              >
+                {isSearching ? '...' : <Search size={20} />}
+              </HapticButton>
+            </div>
+          </div>
+
+          {/* Risultati ricerca */}
+          {searchResults.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-xs font-black opacity-30 uppercase tracking-widest px-1">Risultati</h3>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {searchResults.map(movie => (
+                  <HapticButton
+                    key={movie.id}
+                    onClick={() => addMovieToManualList(movie)}
+                    className="w-full bg-white/5 p-4 rounded-2xl flex items-center gap-4 border border-white/5 active:scale-[0.98] transition-all"
+                  >
+                    {movie.poster && (
+                      <img src={movie.poster} alt={movie.title} className="w-16 h-24 object-cover rounded-xl" />
+                    )}
+                    <div className="flex-1 text-left">
+                      <h4 className="font-black text-sm">{movie.title}</h4>
+                      <p className="text-[10px] opacity-50">{movie.year} • {movie.rating}/10</p>
+                    </div>
+                    <div className="text-green-500">
+                      <Check size={20} />
+                    </div>
+                  </HapticButton>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Lista film selezionati */}
+          {manualMovies.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="text-xs font-black opacity-30 uppercase tracking-widest px-1">
+                Film Selezionati ({manualMovies.length})
+              </h3>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {manualMovies.map(movie => (
+                  <div
+                    key={movie.id}
+                    className="bg-white/5 p-4 rounded-2xl flex items-center gap-4 border border-white/5"
+                  >
+                    {movie.poster && (
+                      <img src={movie.poster} alt={movie.title} className="w-16 h-24 object-cover rounded-xl" />
+                    )}
+                    <div className="flex-1 text-left">
+                      <h4 className="font-black text-sm">{movie.title}</h4>
+                      <p className="text-[10px] opacity-50">{movie.year} • {movie.rating}/10</p>
+                    </div>
+                    <HapticButton
+                      onClick={() => removeMovieFromManualList(movie.id)}
+                      className="p-2 bg-red-600/20 rounded-xl active:bg-red-600/30 transition-colors"
+                    >
+                      <X size={16} className="text-red-500" />
+                    </HapticButton>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Pulsante crea stanza */}
+          <HapticButton
+            onClick={handleCreateManualRoom}
+            disabled={manualMovies.length === 0 || loading}
+            className="w-full py-6 bg-gradient-to-br from-red-600 via-purple-700 to-indigo-800 text-white rounded-[32px] font-black text-xl italic uppercase tracking-widest shadow-2xl shadow-purple-600/30 disabled:opacity-30 disabled:cursor-not-allowed active:scale-[0.96] transition-all"
+          >
+            {loading ? 'Creazione...' : `Crea Stanza (${manualMovies.length} film)`}
+          </HapticButton>
         </div>
       )}
 

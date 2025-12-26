@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { HapticButton } from '../components/HapticButton';
-import { Plus, Users, Moon, Sun, Lock, Sparkles } from 'lucide-react';
+import { Plus, Users, Moon, Sun, Sparkles } from 'lucide-react';
 
 interface Props {
   onCreateRoom: () => void;
@@ -29,26 +29,20 @@ export const HomeView: React.FC<Props> = ({ onCreateRoom, onJoinRoom, toggleThem
 
       <div className="flex-1 flex flex-col justify-center space-y-4">
         <HapticButton 
-          onClick={isGuest ? undefined : onCreateRoom}
+          onClick={onCreateRoom}
           impact="heavy"
-          className={`group relative w-full p-6 rounded-[32px] border transition-all duration-300 ${
-            isGuest 
-            ? 'bg-gray-950/50 border-white/5 opacity-50 cursor-not-allowed' 
-            : 'bg-[#1C1C1E] border-white/10 ios-card-shadow active:scale-[0.96] shadow-2xl shadow-red-600/10'
-          }`}
+          className="group relative w-full p-6 rounded-[32px] border bg-[#1C1C1E] border-white/10 ios-card-shadow active:scale-[0.96] shadow-2xl shadow-red-600/10 transition-all duration-300"
         >
           <div className="relative z-10 flex flex-col items-start gap-4 text-left">
-            <div className={`p-3.5 rounded-2xl text-white ${isGuest ? 'bg-white/5 text-white/20' : 'bg-gradient-to-br from-red-600 to-purple-700 shadow-lg shadow-red-600/20'}`}>
-              {isGuest ? <Lock size={24} /> : <Plus size={24} />}
+            <div className="p-3.5 rounded-2xl text-white bg-gradient-to-br from-red-600 to-purple-700 shadow-lg shadow-red-600/20">
+              <Plus size={24} />
             </div>
             <div>
-              <h3 className="text-xl font-black uppercase italic tracking-tight">{isGuest ? 'Solo Premium' : 'Crea Stanza'}</h3>
-              <p className="text-[10px] font-bold opacity-30 uppercase tracking-widest mt-0.5">
-                {isGuest ? 'Registrati per sbloccare' : 'Host della serata'}
-              </p>
+              <h3 className="text-xl font-black uppercase italic tracking-tight">Crea Stanza</h3>
+              <p className="text-[10px] font-bold opacity-30 uppercase tracking-widest mt-0.5">Host della serata</p>
             </div>
           </div>
-          {!isGuest && <Sparkles className="absolute top-6 right-6 text-white/10 animate-pulse" size={32} />}
+          <Sparkles className="absolute top-6 right-6 text-white/10 animate-pulse" size={32} />
         </HapticButton>
 
         <HapticButton 

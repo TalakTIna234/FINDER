@@ -17,14 +17,32 @@ const apiKeyParam = isApiKey ? `&api_key=${TMDB_ACCESS_TOKEN}` : '';
 export const movieService = {
   async discoverByGenre(genreId: number): Promise<Movie[]> {
     try {
+      // Genera una pagina random tra 1 e 20 (TMDB ha molte pagine)
+      const randomPage = Math.floor(Math.random() * 20) + 1;
+      
+      // Aggiungi anche un parametro per randomizzare l'ordine
+      const sortOptions = [
+        'popularity.desc',
+        'vote_average.desc',
+        'release_date.desc',
+        'revenue.desc',
+        'vote_count.desc'
+      ];
+      const randomSort = sortOptions[Math.floor(Math.random() * sortOptions.length)];
+      
+      console.log(`Fetching movies for genre ${genreId}, page ${randomPage}, sort: ${randomSort}`);
+      
       const response = await fetch(
-        `${BASE_URL}/discover/movie?with_genres=${genreId}&language=it-IT&sort_by=popularity.desc&page=1&include_adult=false${apiKeyParam}`,
+        `${BASE_URL}/discover/movie?with_genres=${genreId}&language=it-IT&sort_by=${randomSort}&page=${randomPage}&include_adult=false${apiKeyParam}`,
         { headers }
       );
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const data = await response.json();
       
-      return data.results.slice(0, 15).map((m: any) => ({
+      // Mescola i risultati per avere ancora più varietà
+      const shuffled = [...data.results].sort(() => Math.random() - 0.5);
+      
+      return shuffled.slice(0, 15).map((m: any) => ({
         id: m.id,
         title: m.title,
         year: m.release_date?.split('-')[0] || "2024",

@@ -130,10 +130,19 @@ class AuthService {
   // Sign in con Google (OAuth reale)
   async signInWithGoogle(): Promise<AuthUser | null> {
     try {
+      // Ottieni l'URL corretto (Vercel o locale)
+      const redirectUrl = window.location.origin;
+      
+      console.log('Google OAuth redirect URL:', redirectUrl);
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}`
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
         }
       });
 
@@ -154,10 +163,15 @@ class AuthService {
   // Sign in con Apple (OAuth reale)
   async signInWithApple(): Promise<AuthUser | null> {
     try {
+      // Ottieni l'URL corretto (Vercel o locale)
+      const redirectUrl = window.location.origin;
+      
+      console.log('Apple OAuth redirect URL:', redirectUrl);
+      
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
         options: {
-          redirectTo: `${window.location.origin}`
+          redirectTo: redirectUrl
         }
       });
 

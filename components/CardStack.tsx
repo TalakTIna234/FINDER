@@ -22,6 +22,16 @@ const MovieCard: React.FC<CardProps> = ({ movie, onSwipe, isFront, onShowDetails
   const opacity = useTransform(x, [-200, -150, 0, 150, 200], [0, 1, 1, 1, 0]);
   const likeOpacity = useTransform(x, [50, 150], [0, 1]);
   const passOpacity = useTransform(x, [-150, -50], [1, 0]);
+  const [movieDetails, setMovieDetails] = useState<Partial<Movie> | null>(null);
+
+  // Carica dettagli quando la card è frontale
+  useEffect(() => {
+    if (isFront && !movieDetails) {
+      movieService.getMovieDetails(movie.id).then(details => {
+        setMovieDetails(details);
+      });
+    }
+  }, [isFront, movie.id]);
 
   return (
     <motion.div
@@ -34,12 +44,12 @@ const MovieCard: React.FC<CardProps> = ({ movie, onSwipe, isFront, onShowDetails
         else if (info.offset.y < -120) onSwipe('up');
       }}
       onClick={() => isFront && onShowDetails()}
-      className="absolute w-full h-[65vh] max-w-sm rounded-[48px] overflow-hidden bg-[#1C1C1E] ios-card-shadow border border-white/10 cursor-grab active:cursor-grabbing"
+      className="absolute w-full h-[65vh] max-w-sm rounded-[48px] overflow-hidden bg-[#1C1C1E] ios-card-shadow border border-white/10 cursor-grab active:cursor-grabbing group"
     >
       <img 
         src={movie.poster} 
         alt={movie.title} 
-        className="w-full h-full object-cover pointer-events-none"
+        className="w-full h-full object-cover pointer-events-none transition-transform duration-700 group-hover:scale-105"
         onError={(e) => {
           e.currentTarget.src = `https://placehold.co/500x750/1c1c1e/white?text=${encodeURIComponent(movie.title)}`;
         }}
@@ -50,12 +60,36 @@ const MovieCard: React.FC<CardProps> = ({ movie, onSwipe, isFront, onShowDetails
       <motion.div style={{ opacity: passOpacity }} className="absolute top-12 right-12 border-8 border-red-500 rounded-2xl px-6 py-3 rotate-[15deg] pointer-events-none z-20 bg-red-500/10 backdrop-blur-sm">
         <span className="text-red-500 font-black text-5xl uppercase tracking-tighter">NO</span>
       </motion.div>
-      <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black via-black/80 to-transparent dark:from-white dark:via-white/80 pt-32 transition-colors duration-500">
-        <h2 className="text-3xl font-black text-white dark:text-black leading-tight mb-1 transition-colors duration-500">{movie.title}</h2>
-        <div className="flex items-center gap-3">
+      
+      {/* Overlay con trama e trailer */}
+      <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black via-black/95 to-transparent dark:from-white dark:via-white/95 pt-24 transition-colors duration-500">
+        <h2 className="text-3xl font-black text-white dark:text-black leading-tight mb-2 transition-colors duration-500">{movie.title}</h2>
+        <div className="flex items-center gap-3 mb-3">
           <p className="text-white/60 dark:text-black/60 font-bold transition-colors duration-500">{movie.year}</p>
           <div className="bg-yellow-400/90 backdrop-blur px-2 py-0.5 rounded-lg text-black font-black text-[10px]">★ {movie.rating}</div>
         </div>
+        
+        {/* Trama - sempre visibile ma compatta */}
+        {(movie.overview || movieDetails?.overview) && (
+          <div className="mb-3">
+            <p className="text-white/80 dark:text-black/80 text-xs font-medium leading-relaxed line-clamp-2 transition-colors duration-500">
+              {movieDetails?.overview || movie.overview}
+            </p>
+          </div>
+        )}
+        
+        {/* Pulsante trailer se disponibile */}
+        {movieDetails?.trailerKey && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onShowDetails();
+            }}
+            className="w-full py-2.5 bg-red-600/90 dark:bg-red-500/90 hover:bg-red-600 dark:hover:bg-red-500 text-white rounded-xl font-black text-xs flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all duration-300 backdrop-blur-sm"
+          >
+            <PlayCircle size={16} /> Guarda Trailer
+          </button>
+        )}
       </div>
     </motion.div>
   );

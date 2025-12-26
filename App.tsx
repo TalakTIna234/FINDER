@@ -789,32 +789,40 @@ const App: React.FC = () => {
                          </p>
                        </div>
                        
-                       {/* Icone con animazioni eleganti */}
+                       {/* Icone con animazioni eleganti e fluide */}
                        <div className="flex items-center justify-center gap-6">
                          <button
                            onClick={() => handleSocialLogin('google')}
-                           className="group relative p-4 bg-white/5 dark:bg-black/10 rounded-full border border-white/10 dark:border-black/20 hover:bg-white/10 dark:hover:bg-black/20 transition-all duration-500 active:scale-90 hover:scale-110"
+                           className="group relative p-4 bg-white/5 dark:bg-black/10 rounded-full border border-white/10 dark:border-black/20 hover:bg-white/10 dark:hover:bg-black/20 transition-all duration-700 ease-out active:scale-85 hover:scale-110"
                            title="Registrati con Google"
                          >
-                           {/* Effetto glow al hover */}
-                           <div className="absolute inset-0 rounded-full bg-gradient-to-br from-red-500/20 to-orange-500/20 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500" />
-                           {/* Icona */}
-                           <Mail size={22} className="relative z-10 text-white dark:text-black transition-transform duration-500 group-hover:rotate-12" />
-                           {/* Effetto ping al click */}
-                           <div className="absolute inset-0 rounded-full bg-red-500/30 opacity-0 group-active:opacity-100 group-active:animate-ping" />
+                           {/* Effetto glow animato al hover */}
+                           <div className="absolute inset-0 rounded-full bg-gradient-to-br from-red-500/30 via-orange-500/20 to-yellow-500/20 opacity-0 group-hover:opacity-100 blur-2xl transition-all duration-700 ease-out group-hover:scale-150" />
+                           {/* Anello luminoso */}
+                           <div className="absolute inset-0 rounded-full border-2 border-red-500/0 group-hover:border-red-500/50 transition-all duration-700 ease-out" />
+                           {/* Icona con animazione spring */}
+                           <Mail size={22} className="relative z-10 text-white dark:text-black transition-all duration-700 ease-out group-hover:rotate-12 group-hover:scale-110 group-active:rotate-24 group-active:scale-95" />
+                           {/* Effetto ping al click con delay */}
+                           <div className="absolute inset-0 rounded-full bg-red-500/40 opacity-0 group-active:opacity-100 group-active:animate-ping" style={{ animationDelay: '0ms' }} />
+                           {/* Ripple effect */}
+                           <div className="absolute inset-0 rounded-full bg-red-500/20 opacity-0 group-active:opacity-100 group-active:animate-ping" style={{ animationDelay: '150ms' }} />
                          </button>
                          
                          <button
                            onClick={() => handleSocialLogin('apple')}
-                           className="group relative p-4 bg-white/5 dark:bg-black/10 rounded-full border border-white/10 dark:border-black/20 hover:bg-white/10 dark:hover:bg-black/20 transition-all duration-500 active:scale-90 hover:scale-110"
+                           className="group relative p-4 bg-white/5 dark:bg-black/10 rounded-full border border-white/10 dark:border-black/20 hover:bg-white/10 dark:hover:bg-black/20 transition-all duration-700 ease-out active:scale-85 hover:scale-110"
                            title="Registrati con Apple"
                          >
-                           {/* Effetto glow al hover */}
-                           <div className="absolute inset-0 rounded-full bg-gradient-to-br from-gray-400/20 to-gray-600/20 opacity-0 group-hover:opacity-100 blur-xl transition-opacity duration-500" />
-                           {/* Icona */}
-                           <Apple size={22} className="relative z-10 text-white dark:text-black fill-current transition-transform duration-500 group-hover:rotate-12" />
-                           {/* Effetto ping al click */}
-                           <div className="absolute inset-0 rounded-full bg-gray-500/30 opacity-0 group-active:opacity-100 group-active:animate-ping" />
+                           {/* Effetto glow animato al hover */}
+                           <div className="absolute inset-0 rounded-full bg-gradient-to-br from-gray-300/30 via-gray-500/20 to-gray-700/20 opacity-0 group-hover:opacity-100 blur-2xl transition-all duration-700 ease-out group-hover:scale-150" />
+                           {/* Anello luminoso */}
+                           <div className="absolute inset-0 rounded-full border-2 border-gray-400/0 group-hover:border-gray-400/50 transition-all duration-700 ease-out" />
+                           {/* Icona con animazione spring */}
+                           <Apple size={22} className="relative z-10 text-white dark:text-black fill-current transition-all duration-700 ease-out group-hover:rotate-12 group-hover:scale-110 group-active:rotate-24 group-active:scale-95" />
+                           {/* Effetto ping al click con delay */}
+                           <div className="absolute inset-0 rounded-full bg-gray-500/40 opacity-0 group-active:opacity-100 group-active:animate-ping" style={{ animationDelay: '0ms' }} />
+                           {/* Ripple effect */}
+                           <div className="absolute inset-0 rounded-full bg-gray-500/20 opacity-0 group-active:opacity-100 group-active:animate-ping" style={{ animationDelay: '150ms' }} />
                          </button>
                        </div>
                      </div>

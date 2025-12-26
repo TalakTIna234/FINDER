@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { HapticButton } from '../components/HapticButton';
 import { ChevronLeft, Share, Play, Users, Search, List, Wand2, Sparkles, Check, X } from 'lucide-react';
-import { GENRES } from '../constants';
+import { GENRES, DEFAULT_MOVIES_BY_GENRE } from '../constants';
 import { Movie } from '../types';
 import { movieService } from '../services/movieService';
 import { roomService, Room } from '../services/roomService';
@@ -94,56 +94,20 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       console.log('Genre ID:', genreId);
       console.log('Timestamp:', new Date().toISOString());
       
-      // Carica film
-      console.log('[1/4] Loading movies from TMDB...');
-      console.log('TMDB Access Token present:', !!import.meta.env.VITE_TMDB_ACCESS_TOKEN);
-      const moviesStartTime = Date.now();
+      // Usa film di default immediatamente per velocità
+      console.log('[1/4] Using default movies for instant room creation...');
+      const defaultMovies = DEFAULT_MOVIES_BY_GENRE[genreId] || [];
+      let movies: Movie[] = defaultMovies.slice(0, 15) as Movie[]; // Usa fino a 15 film di default
       
-      let movies: Movie[] = [];
-      try {
-        // Timeout specifico per la chiamata TMDB (6 secondi per dare tempo)
-        const tmdbTimeout = setTimeout(() => {
-          console.error('[1/4] TMDB call timeout after 6 seconds');
-        }, 6000);
-        
-        movies = await movieService.discoverByGenre(genreId);
-        clearTimeout(tmdbTimeout);
-      } catch (movieError) {
+      if (movies.length === 0) {
         clearTimeout(timeoutId);
-        console.error('[1/4] Error loading movies:', movieError);
-        const errorMsg = movieError instanceof Error ? movieError.message : 'Errore sconosciuto';
-        
-        // Messaggio di errore più specifico
-        let userMessage = `Errore nel caricamento dei film: ${errorMsg}\n\n`;
-        
-        if (errorMsg.includes('Token') || errorMsg.includes('autenticazione')) {
-          userMessage += 'Il token TMDB non è valido o non è configurato.\nVerifica la variabile d\'ambiente VITE_TMDB_ACCESS_TOKEN.';
-        } else if (errorMsg.includes('Timeout') || errorMsg.includes('connessione è lenta')) {
-          userMessage += 'La chiamata a TMDB sta impiegando troppo tempo.\nLa connessione potrebbe essere lenta. Riprova.';
-        } else if (errorMsg.includes('Errore di connessione') || errorMsg.includes('internet')) {
-          userMessage += 'Problema di connessione rilevato.\nVerifica la connessione internet e riprova.';
-        } else if (errorMsg.includes('Nessun film trovato')) {
-          userMessage += 'Nessun film disponibile per questo genere.\nProva con un altro genere.';
-        } else {
-          userMessage += 'Errore durante il caricamento.\nVerifica:\n1. La connessione internet\n2. Il token TMDB\n3. Controlla la console per dettagli.';
-        }
-        
-        alert(userMessage);
+        console.error('[1/4] No default movies available for genre:', genreId);
+        alert('Nessun film di default disponibile per questo genere. Riprova.');
         setLoading(false);
         return;
       }
       
-      const moviesLoadTime = Date.now() - moviesStartTime;
-      console.log(`[1/4] Movies loaded in ${moviesLoadTime}ms:`, movies?.length || 0);
-      console.log('[1/4] Sample movie:', movies[0]);
-      
-      if (!movies || movies.length === 0) {
-        clearTimeout(timeoutId);
-        console.error('[1/4] No movies returned from TMDB');
-        alert('Nessun film trovato per questo genere. Verifica:\n1. Il token TMDB sia valido\n2. La connessione internet sia attiva\n3. Riprova con un altro genere.');
-        setLoading(false);
-        return;
-      }
+      console.log(`[1/4] Using ${movies.length} default movies for instant creation`);
       
       // Verifica autenticazione o crea guest ID
       console.log('[2/4] Checking authentication...');
@@ -249,13 +213,40 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       setRoomCode(newRoom.code);
       setRoom(newRoom);
       
-      // Incrementa statistiche (non bloccante)
-      try {
-        await statsService.increment('rooms_created');
-        console.log('Stats incremented');
-      } catch (statsError) {
-        console.warn('Error incrementing stats (non-critical):', statsError);
-      }
+      // Salva riferimento alla stanza per l'update in background
+      const roomCodeForUpdate = newRoom.code;
+      
+      // Carica film da TMDB in background (non bloccante) e aggiorna la stanza
+      console.log('[Background] Starting TMDB load in background...');
+      movieService.discoverByGenre(genreId).then(tmdbMovies => {
+        if (tmdbMovies && tmdbMovies.length > 0) {
+          console.log(`[Background] TMDB loaded ${tmdbMovies.length} movies, updating room ${roomCodeForUpdate}...`);
+          roomService.updateRoomMovies(roomCodeForUpdate, tmdbMovies).then(updated => {
+            if (updated) {
+              console.log('[Background] ✓ Room updated with TMDB movies');
+              // Aggiorna anche lo stato locale se siamo ancora nella stessa stanza
+              if (roomCodeForUpdate === roomCode) {
+                roomService.getRoom(roomCodeForUpdate).then(updatedRoom => {
+                  if (updatedRoom) {
+                    setRoom(updatedRoom);
+                  }
+                }).catch(err => {
+                  console.warn('[Background] Error refreshing room state:', err);
+                });
+              }
+            }
+          }).catch(err => {
+            console.warn('[Background] Error updating room with TMDB movies (non-critical):', err);
+          });
+        }
+      }).catch(err => {
+        console.warn('[Background] Error loading TMDB movies (non-critical, using defaults):', err);
+      });
+      
+      // Incrementa statistiche (non bloccante, silenzioso)
+      statsService.increment('rooms_created').catch(err => {
+        console.warn('Error incrementing stats (non-critical, silent):', err);
+      });
       
       timeoutCleared = true;
       clearTimeout(timeoutId);

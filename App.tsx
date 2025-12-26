@@ -475,7 +475,23 @@ const App: React.FC = () => {
   };
 
   const renderContent = () => {
-    if (isSessionActive) return <CardStack movies={currentMovies} onFinish={endSession} isMultiplayer={true} />;
+    if (isSessionActive) {
+      // Ottieni nickname per CardStack
+      const nickname = isGuest 
+        ? (localStorage.getItem('mm_guest_nickname') || 'Guest')
+        : (nickname || 'Tu');
+      
+      return (
+        <CardStack 
+          movies={currentMovies} 
+          onFinish={endSession} 
+          isMultiplayer={true}
+          userId={currentUserId || undefined}
+          userNickname={nickname}
+          totalMembers={roomViewMode ? 2 : 1} // TODO: ottenere numero reale membri dalla stanza
+        />
+      );
+    }
     if (roomViewMode) return <RoomView mode={roomViewMode} onBack={() => setRoomViewMode(null)} onStartSession={(movies) => { setCurrentMovies(movies); setIsSessionActive(true); }} />;
 
     switch (activeTab) {

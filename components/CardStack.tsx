@@ -6,6 +6,8 @@ import { X, Heart, Star, PlayCircle, Info, ChevronDown, Trophy, CheckCircle2, Sp
 import { HapticButton } from './HapticButton';
 import { movieService } from '../services/movieService';
 import { statsService } from '../services/statsService';
+import { Supertrailer } from './Supertrailer';
+import { TrailerVote } from './TrailerVote';
 import confetti from 'canvas-confetti';
 
 interface CardProps {
@@ -13,9 +15,10 @@ interface CardProps {
   onSwipe: (direction: 'left' | 'right' | 'up') => void;
   isFront: boolean;
   onShowDetails: () => void;
+  onRequestTrailer?: (movie: Movie, trailerKey: string) => void;
 }
 
-const MovieCard: React.FC<CardProps> = ({ movie, onSwipe, isFront, onShowDetails }) => {
+const MovieCard: React.FC<CardProps> = ({ movie, onSwipe, isFront, onShowDetails, onRequestTrailer }) => {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-25, 25]);
@@ -83,7 +86,11 @@ const MovieCard: React.FC<CardProps> = ({ movie, onSwipe, isFront, onShowDetails
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onShowDetails();
+              if (onRequestTrailer) {
+                onRequestTrailer(movie, movieDetails.trailerKey!);
+              } else {
+                onShowDetails();
+              }
             }}
             className="w-full py-2.5 bg-red-600/90 dark:bg-red-500/90 hover:bg-red-600 dark:hover:bg-red-500 text-white rounded-xl font-black text-xs flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all duration-300 backdrop-blur-sm"
           >
@@ -95,17 +102,59 @@ const MovieCard: React.FC<CardProps> = ({ movie, onSwipe, isFront, onShowDetails
   );
 };
 
-export const CardStack: React.FC<{ movies: Movie[], onFinish: (finalMovies: Movie[]) => void, isMultiplayer?: boolean }> = ({ movies, onFinish, isMultiplayer }) => {
+interface CardStackProps {
+  movies: Movie[];
+  onFinish: (finalMovies: Movie[]) => void;
+  isMultiplayer?: boolean;
+  userId?: string;
+  userNickname?: string;
+  totalMembers?: number;
+}
+
+export const CardStack: React.FC<CardStackProps> = ({ 
+  movies, 
+  onFinish, 
+  isMultiplayer = false,
+  userId,
+  userNickname = 'Tu',
+  totalMembers = 1
+}) => {
   const [currentRoundMovies, setCurrentRoundMovies] = useState<Movie[]>(movies);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [likedThisRound, setLikedThisRound] = useState<Movie[]>([]);
   const [round, setRound] = useState(1);
   const [winner, setWinner] = useState<Movie | null>(null);
   const [isInstantMatch, setIsInstantMatch] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [detailedMovie, setDetailedMovie] = useState<Movie | null>(null);
   const [showTrailerInApp, setShowTrailerInApp] = useState(false);
+  
+  // Sistema trailer
+  const [trailersUsed, setTrailersUsed] = useState<number>(0);
+  const [supertrailerMovie, setSupertrailerMovie] = useState<{ movie: Movie; trailerKey: string } | null>(null);
+  const [voteTrailer, setVoteTrailer] = useState<{ movie: Movie; trailerKey: string; requestedBy: string; votes: { userId: string; vote: 'yes' | 'no' }[] } | null>(null);
+  const [userVote, setUserVote] = useState<'yes' | 'no' | undefined>(undefined);
+  
+  // Carica trailer usati da localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('mm_trailers_used');
+    if (saved) {
+      setTrailersUsed(parseInt(saved, 10));
+    }
+  }, []);
+  
+  // Salva trailer usati in localStorage
+  useEffect(() => {
+    localStorage.setItem('mm_trailers_used', trailersUsed.toString());
+  }, [trailersUsed]);
+  
+  // Reset trailer quando inizia nuova sessione
+  useEffect(() => {
+    setTrailersUsed(0);
+    localStorage.removeItem('mm_trailers_used');
+  }, [movies]);
 
   const triggerConfetti = () => {
     confetti({
@@ -260,6 +309,30 @@ export const CardStack: React.FC<{ movies: Movie[], onFinish: (finalMovies: Movi
         </HapticButton>
       </div>
 
+      {/* Supertrailer Overlay */}
+      {supertrailerMovie && (
+        <Supertrailer
+          movie={supertrailerMovie.movie}
+          trailerKey={supertrailerMovie.trailerKey}
+          onClose={handleTrailerClose}
+        />
+      )}
+      
+      {/* Trailer Vote Overlay */}
+      {voteTrailer && (
+        <TrailerVote
+          movie={voteTrailer.movie}
+          trailerKey={voteTrailer.trailerKey}
+          requestedBy={voteTrailer.requestedBy}
+          totalMembers={totalMembers}
+          currentVotes={voteTrailer.votes.filter(v => v.vote === 'yes').length}
+          onVote={handleVote}
+          onClose={handleVoteTrailerEnd}
+          hasVoted={userVote !== undefined}
+          userVote={userVote}
+        />
+      )}
+      
       {/* Instant Match Animation Overlay */}
       <AnimatePresence>
         {isInstantMatch && (

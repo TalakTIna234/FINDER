@@ -584,24 +584,6 @@ const App: React.FC = () => {
                        Non hai un account? <span className="text-red-500 dark:text-red-400">Registrati</span>
                      </span>
                    </div>
-                   
-                   {/* Icone registrazione veloce */}
-                   <div className="flex items-center justify-center gap-6 pt-4">
-                     <button
-                       onClick={() => handleSocialLogin('google')}
-                       className="p-3 bg-white/5 dark:bg-black/10 rounded-full border border-white/10 dark:border-black/20 hover:bg-white/10 dark:hover:bg-black/20 transition-all duration-300 active:scale-95"
-                       title="Registrati con Google"
-                     >
-                       <Mail size={20} className="text-white dark:text-black" />
-                     </button>
-                     <button
-                       onClick={() => handleSocialLogin('apple')}
-                       className="p-3 bg-white/5 dark:bg-black/10 rounded-full border border-white/10 dark:border-black/20 hover:bg-white/10 dark:hover:bg-black/20 transition-all duration-300 active:scale-95"
-                       title="Registrati con Apple"
-                     >
-                       <Apple size={20} className="text-white dark:text-black" fill="currentColor" />
-                     </button>
-                   </div>
                  </div>
                ) : (
                  <div className="space-y-5">
@@ -797,16 +779,39 @@ const App: React.FC = () => {
                      </span>
                    </HapticButton>
                    
-                   <button
-                     onClick={() => setIsSignUp(!isSignUp)}
-                     className="w-full text-center text-[9px] font-black opacity-50 dark:opacity-60 hover:opacity-100 transition-opacity py-2 px-4 rounded-full bg-white/5 dark:bg-black/10 border border-white/10 dark:border-black/20 hover:bg-white/10 dark:hover:bg-black/20 text-white dark:text-black uppercase tracking-widest"
-                   >
-                     {isSignUp ? (
-                       <>Hai già un account? <span className="text-red-500 dark:text-red-400">Accedi</span></>
-                     ) : (
-                       <>Non hai un account? <span className="text-red-500 dark:text-red-400">Registrati</span></>
-                     )}
-                   </button>
+                   {/* Link testo per switch login/registrazione */}
+                   <div className="text-center pt-2">
+                     <span
+                       onClick={() => setIsSignUp(!isSignUp)}
+                       className="text-[9px] font-black opacity-50 dark:opacity-60 hover:opacity-100 transition-opacity uppercase tracking-widest text-white dark:text-black cursor-pointer"
+                     >
+                       {isSignUp ? (
+                         <>Hai già un account? <span className="text-red-500 dark:text-red-400">Accedi</span></>
+                       ) : (
+                         <>Non hai un account? <span className="text-red-500 dark:text-red-400">Registrati</span></>
+                       )}
+                     </span>
+                   </div>
+                   
+                   {/* Icone registrazione veloce - solo nella sezione registrazione */}
+                   {isSignUp && (
+                     <div className="flex items-center justify-center gap-6 pt-4">
+                       <button
+                         onClick={() => handleSocialLogin('google')}
+                         className="p-3 bg-white/5 dark:bg-black/10 rounded-full border border-white/10 dark:border-black/20 hover:bg-white/10 dark:hover:bg-black/20 transition-all duration-300 active:scale-95"
+                         title="Registrati con Google"
+                       >
+                         <Mail size={20} className="text-white dark:text-black" />
+                       </button>
+                       <button
+                         onClick={() => handleSocialLogin('apple')}
+                         className="p-3 bg-white/5 dark:bg-black/10 rounded-full border border-white/10 dark:border-black/20 hover:bg-white/10 dark:hover:bg-black/20 transition-all duration-300 active:scale-95"
+                         title="Registrati con Apple"
+                       >
+                         <Apple size={20} className="text-white dark:text-black" fill="currentColor" />
+                       </button>
+                     </div>
+                   )}
                  </div>
                )}
             </div>

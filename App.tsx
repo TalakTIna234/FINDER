@@ -396,7 +396,33 @@ const App: React.FC = () => {
       
       refreshProfile();
     }
-  }, [activeTab]);
+  }, [activeTab]); // Rimossa dipendenza isGuest per evitare loop
+  
+  // Refresh profilo quando isGuest cambia (dopo login/logout)
+  useEffect(() => {
+    if (activeTab === 'profile' && !isGuest) {
+      const refreshProfile = async () => {
+        try {
+          console.log('[Profile] isGuest changed to false - refreshing...');
+          const user = await authService.getCurrentUser();
+          if (user) {
+            const profile = await profileService.getCurrentProfile();
+            if (profile) {
+              setNickname(profile.nickname);
+              setBio(profile.bio || '');
+              setAvatarUrl(profile.avatar_url || null);
+            }
+            const stats = await statsService.getStats();
+            if (stats) setUserStats(stats);
+            setCurrentUserId(user.id);
+          }
+        } catch (error) {
+          console.error('[Profile] Error refreshing after isGuest change:', error);
+        }
+      };
+      refreshProfile();
+    }
+  }, [isGuest, activeTab]);
 
   const saveProfile = async () => {
     if (isGuest) {

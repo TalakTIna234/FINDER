@@ -868,8 +868,8 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       )}
 
       {step === 'lobby' && (
-        <div className="flex-1 flex flex-col space-y-10 pb-32">
-          <div className="bg-white/5 dark:bg-black/20 backdrop-blur-2xl rounded-[48px] p-10 text-center space-y-6 border border-white/20 dark:border-black/30 shadow-2xl relative overflow-hidden">
+        <div className="flex-1 flex flex-col space-y-6 pb-28">
+          <div className="bg-white/5 dark:bg-black/20 backdrop-blur-2xl rounded-[32px] p-6 text-center space-y-4 border border-white/20 dark:border-black/30 shadow-2xl relative overflow-hidden">
             {/* Icona condivisione in alto a destra */}
             <motion.button
               whileHover={{ scale: 1.1, rotate: 5 }}
@@ -903,7 +903,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                   }
                 }
               }}
-              className="absolute top-4 right-4 z-20 p-3 bg-white/10 dark:bg-black/20 backdrop-blur-xl rounded-full border border-white/20 dark:border-black/30 shadow-lg hover:bg-white/15 dark:hover:bg-black/30 transition-all group"
+              className="absolute top-3 right-3 z-20 p-2.5 bg-white/10 dark:bg-black/20 backdrop-blur-xl rounded-full border border-white/20 dark:border-black/30 shadow-lg hover:bg-white/15 dark:hover:bg-black/30 transition-all group"
             >
               <motion.div
                 animate={{ 
@@ -917,19 +917,19 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                   ease: "easeInOut"
                 }}
               >
-                <Share size={20} className="text-white dark:text-black group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors" />
+                <Share size={18} className="text-white dark:text-black group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors" />
               </motion.div>
             </motion.button>
             
-            {/* Effetti liquid glass */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-white/5 to-transparent dark:from-black/20 dark:via-black/10 dark:to-transparent rounded-[48px]" />
-            <div className="absolute top-0 left-0 w-32 h-32 bg-red-600/10 dark:bg-red-500/10 blur-3xl rounded-full -ml-16 -mt-16" />
-            <div className="absolute bottom-0 right-0 w-40 h-40 bg-purple-600/10 dark:bg-purple-500/10 blur-3xl rounded-full -mr-20 -mb-20" />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-indigo-600/5 dark:bg-indigo-500/5 blur-2xl rounded-full" />
+            {/* Effetti liquid glass - sistemato per evitare parti nere */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-white/5 to-transparent dark:from-black/20 dark:via-black/10 dark:to-transparent rounded-[32px] pointer-events-none" />
+            <div className="absolute top-0 left-0 w-24 h-24 bg-red-600/10 dark:bg-red-500/10 blur-3xl rounded-full -ml-12 -mt-12 pointer-events-none" />
+            <div className="absolute bottom-0 right-0 w-32 h-32 bg-purple-600/10 dark:bg-purple-500/10 blur-3xl rounded-full -mr-16 -mb-16 pointer-events-none" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-indigo-600/5 dark:bg-indigo-500/5 blur-2xl rounded-full pointer-events-none" />
             
             <div className="relative z-10">
-              <p className="text-[10px] font-black opacity-40 dark:opacity-60 uppercase tracking-[0.5em] mb-3 text-white dark:text-black">Codice Accesso</p>
-              <h2 className="text-6xl font-black text-red-600 dark:text-red-500 font-mono tracking-[0.1em] drop-shadow-lg">{roomCode}</h2>
+              <p className="text-[9px] font-black opacity-40 dark:opacity-60 uppercase tracking-[0.4em] mb-2 text-white dark:text-black">Codice Accesso</p>
+              <h2 className="text-4xl font-black text-red-600 dark:text-red-500 font-mono tracking-[0.1em] drop-shadow-lg">{roomCode}</h2>
             </div>
             
             <div className="relative z-10">
@@ -943,29 +943,29 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                     console.error('Error copying:', err);
                   }
                 }}
-                className="px-8 py-3 bg-white/10 dark:bg-black/20 backdrop-blur-xl rounded-full font-black uppercase text-[10px] tracking-widest flex items-center gap-2 mx-auto active:bg-white/15 dark:active:bg-black/30 transition-all border border-white/20 dark:border-black/30 shadow-lg"
+                className="px-6 py-2.5 bg-white/10 dark:bg-black/20 backdrop-blur-xl rounded-full font-black uppercase text-[9px] tracking-widest flex items-center gap-2 mx-auto active:bg-white/15 dark:active:bg-black/30 transition-all border border-white/20 dark:border-black/30 shadow-lg"
               >
-                <Copy size={14} /> Copia Codice
+                <Copy size={12} /> Copia Codice
               </HapticButton>
             </div>
           </div>
 
-          <div className="flex-1 space-y-5">
-             <h3 className="text-xs font-black opacity-30 uppercase tracking-[0.2em] px-4 flex items-center gap-2">
-                <Users size={14} /> Membri Online ({room?.members.length || 0})
+          <div className="flex-1 space-y-3">
+             <h3 className="text-[10px] font-black opacity-30 uppercase tracking-[0.2em] px-2 flex items-center gap-2">
+                <Users size={12} /> Membri Online ({room?.members.length || 0})
              </h3>
              {room?.members.map((member) => {
                const isCurrentUser = currentUserId && member.id === currentUserId;
                return (
-                 <div key={member.id} className="bg-white/5 p-5 rounded-[32px] flex items-center gap-4 border border-white/5">
-                   <div className={`w-14 h-14 bg-gradient-to-br ${member.isHost ? 'from-red-600 to-purple-600' : 'from-blue-600 to-indigo-600'} rounded-full flex items-center justify-center font-black shadow-xl`}>
+                 <div key={member.id} className="bg-white/5 p-4 rounded-[24px] flex items-center gap-3 border border-white/5">
+                   <div className={`w-12 h-12 bg-gradient-to-br ${member.isHost ? 'from-red-600 to-purple-600' : 'from-blue-600 to-indigo-600'} rounded-full flex items-center justify-center font-black shadow-xl text-sm`}>
                      {member.nickname.charAt(0).toUpperCase()}
                    </div>
-                   <div className="flex-1">
-                     <span className="font-black italic uppercase text-sm">
+                   <div className="flex-1 min-w-0">
+                     <span className="font-black italic uppercase text-xs truncate block">
                        {member.nickname} {member.isHost ? '(Host)' : ''}
                      </span>
-                     <p className={`text-[10px] font-black uppercase tracking-widest mt-0.5 ${member.status === 'ready' ? 'text-green-500' : 'text-blue-500'}`}>
+                     <p className={`text-[9px] font-black uppercase tracking-widest mt-0.5 ${member.status === 'ready' ? 'text-green-500' : 'text-blue-500'}`}>
                        {member.status === 'ready' ? 'Pronto' : 'In gioco'}
                      </p>
                    </div>
@@ -974,14 +974,14 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
              })}
           </div>
 
-          <div className="sticky bottom-0 pt-4 bg-gradient-to-t from-black via-black to-transparent dark:from-white dark:via-white pb-6 -mx-6 px-6 z-10">
+          <div className="sticky bottom-0 pt-3 bg-gradient-to-t from-black via-black/95 to-transparent dark:from-white dark:via-white/95 pb-4 -mx-6 px-6 z-10">
             <HapticButton 
               onClick={startSession}
-              className="group w-full py-6 bg-gradient-to-br from-red-600 via-purple-700 to-indigo-800 dark:from-red-500 dark:via-purple-600 dark:to-indigo-700 text-white rounded-[32px] font-black text-xl italic uppercase tracking-widest shadow-2xl shadow-purple-600/30 dark:shadow-purple-500/30 active:scale-[0.96] transition-all relative overflow-hidden"
+              className="group w-full py-4 bg-gradient-to-br from-red-600 via-purple-700 to-indigo-800 dark:from-red-500 dark:via-purple-600 dark:to-indigo-700 text-white rounded-[24px] font-black text-base italic uppercase tracking-widest shadow-2xl shadow-purple-600/30 dark:shadow-purple-500/30 active:scale-[0.96] transition-all relative overflow-hidden"
             >
               <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-10 transition-opacity" />
-              <div className="flex items-center justify-center gap-3 relative z-10">
-                <Play fill="currentColor" size={24} className="animate-pulse" />
+              <div className="flex items-center justify-center gap-2 relative z-10">
+                <Play fill="currentColor" size={20} className="animate-pulse" />
                 Inizia Match
               </div>
             </HapticButton>

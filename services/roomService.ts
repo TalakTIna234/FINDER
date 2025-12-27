@@ -490,6 +490,40 @@ class RoomService {
     }
   }
 
+  async cancelRoom(code: string): Promise<boolean> {
+    try {
+      const room = await this.getRoom(code);
+      if (!room) return false;
+
+      console.log('[cancelRoom] Cancelling room:', code);
+      const { error } = await supabase
+        .from('rooms')
+        .update({ status: 'lobby', updated_at: new Date().toISOString() })
+        .eq('code', code);
+
+      if (error) {
+        console.error('[cancelRoom] Error:', error);
+        return false;
+      }
+
+      // Reset tutti i membri a 'ready'
+      const { error: membersError } = await supabase
+        .from('room_members')
+        .update({ status: 'ready' })
+        .eq('room_id', room.id);
+
+      if (membersError) {
+        console.error('[cancelRoom] Error updating members:', membersError);
+        // Non critico, continua
+      }
+
+      return true;
+    } catch (error) {
+      console.error('[cancelRoom] Exception:', error);
+      return false;
+    }
+  }
+
   async startRoom(code: string): Promise<boolean> {
     try {
       const room = await this.getRoom(code);

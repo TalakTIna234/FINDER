@@ -116,11 +116,18 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                 code: updatedRoom.code,
                 status: updatedRoom.status,
                 membersCount: updatedRoom.members.length,
-                moviesCount: updatedRoom.movies?.length || 0
+                moviesCount: updatedRoom.movies?.length || 0,
+                members: updatedRoom.members.map(m => ({ id: m.id, nickname: m.nickname, status: m.status }))
               });
               
               // Aggiorna sempre la stanza (per vedere nuovi membri)
-              setRoom(updatedRoom);
+              setRoom(prevRoom => {
+                // Log del cambio per debug
+                if (prevRoom && prevRoom.members.length !== updatedRoom.members.length) {
+                  console.log('[RoomView] Member count changed:', prevRoom.members.length, '->', updatedRoom.members.length);
+                }
+                return updatedRoom;
+              });
               
               // Se lo status è cambiato a 'playing', avvia la sessione per tutti i membri
               if (updatedRoom.status === 'playing') {
@@ -134,6 +141,29 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                 } else {
                   console.error('[RoomView] Room status is playing but no movies available');
                   alert('Errore: la stanza non ha film. Contatta l\'host.');
+                }
+              } else if (updatedRoom.status === 'lobby') {
+                // Se siamo in lobby, verifica se tutti sono pronti per auto-start
+                const allReady = updatedRoom.members.every(m => m.status === 'ready');
+                if (allReady && updatedRoom.members.length > 1) {
+                  console.log('[RoomView] All members ready, auto-starting in 1 second...');
+                  setTimeout(async () => {
+                    // Solo l'host può avviare, quindi se siamo host avviamo
+                    const isHost = updatedRoom.hostId === currentUserId || 
+                                   updatedRoom.members.some(m => m.id === currentUserId && m.isHost === true);
+                    if (isHost) {
+                      const room = await roomService.getRoom(roomCode);
+                      if (room && room.status === 'lobby' && room.movies.length > 0) {
+                        console.log('[RoomView] Auto-starting match (all ready)');
+                        const success = await roomService.startRoom(roomCode);
+                        if (success) {
+                          setTimeout(() => {
+                            onStartSession(room.movies);
+                          }, 300);
+                        }
+                      }
+                    }
+                  }, 1000);
                 }
               }
             } else {
@@ -1138,52 +1168,87 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
              })}
           </div>
 
-          <div className="sticky bottom-0 pt-3 bg-gradient-to-t from-black via-black/95 to-transparent dark:from-white dark:via-white/95 pb-4 -mx-6 px-6 z-10">
+          <div className="sticky bottom-0 pt-3 bg-gradient-to-t from-black via-black/95 to-transparent dark:from-white dark:via-white/95 pb-4 -mx-6 px-6 z-10 space-y-3">
             {isHost ? (
-              <HapticButton 
-                onClick={startSession}
-                className="group w-full py-4 bg-gradient-to-br from-red-600 via-purple-700 to-indigo-800 dark:from-red-500 dark:via-purple-600 dark:to-indigo-700 text-white rounded-[24px] font-black text-base italic uppercase tracking-widest shadow-2xl shadow-purple-600/30 dark:shadow-purple-500/30 active:scale-[0.96] transition-all relative overflow-hidden"
+              <>
+                {/* Pulsante X per annullare (solo se in playing) */}
+                {room?.status === 'playing' && (
+                  <HapticButton
+                    onClick={cancelSession}
+                    className="w-full py-2.5 bg-red-600/20 dark:bg-red-500/20 backdrop-blur-xl rounded-[16px] border border-red-600/30 dark:border-red-500/30 flex items-center justify-center gap-2 active:bg-red-600/30 dark:active:bg-red-500/30 transition-all"
+                  >
+                    <X size={14} className="text-red-400 dark:text-red-500" />
+                    <span className="text-red-400 dark:text-red-500 font-black text-[10px] uppercase tracking-wider">Annulla Sessione</span>
+                  </HapticButton>
+                )}
+                
+                {/* Pulsante Inizia Match */}
+                <HapticButton 
+                  onClick={startSession}
+                  className="group w-full py-4 bg-gradient-to-br from-red-600 via-purple-700 to-indigo-800 dark:from-red-500 dark:via-purple-600 dark:to-indigo-700 text-white rounded-[24px] font-black text-base italic uppercase tracking-widest shadow-2xl shadow-purple-600/30 dark:shadow-purple-500/30 active:scale-[0.96] transition-all relative overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-10 transition-opacity" />
+                  <div className="flex items-center justify-center gap-2 relative z-10">
+                    <Play fill="currentColor" size={20} className="animate-pulse" />
+                    Inizia Match
+                  </div>
+                </HapticButton>
+              </>
+            ) : (
+              /* Pulsante Pronto in stile liquid glass Apple/Netflix */
+              <HapticButton
+                onClick={setReady}
+                disabled={isCurrentMemberReady}
+                className={`group relative w-full py-4 rounded-[28px] font-black text-sm italic uppercase tracking-wider overflow-hidden transition-all ${
+                  isCurrentMemberReady 
+                    ? 'bg-gradient-to-br from-green-500/30 via-emerald-500/30 to-teal-500/30 dark:from-green-400/40 dark:via-emerald-400/40 dark:to-teal-400/40 border border-green-500/40 dark:border-green-400/50 text-green-300 dark:text-green-200 cursor-not-allowed' 
+                    : 'bg-gradient-to-br from-purple-600/40 via-pink-600/40 to-red-600/40 dark:from-purple-500/50 dark:via-pink-500/50 dark:to-red-500/50 border border-white/20 dark:border-white/30 text-white dark:text-white active:scale-[0.97]'
+                } backdrop-blur-2xl shadow-2xl`}
               >
-                <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-10 transition-opacity" />
-                <div className="flex items-center justify-center gap-2 relative z-10">
-                  <Play fill="currentColor" size={20} className="animate-pulse" />
-                  Inizia Match
+                {/* Effetti liquid glass */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-50" />
+                <div className="absolute top-0 left-0 w-32 h-32 bg-purple-400/20 blur-3xl rounded-full -translate-x-1/2 -translate-y-1/2" />
+                <div className="absolute bottom-0 right-0 w-40 h-40 bg-pink-400/20 blur-3xl rounded-full translate-x-1/3 translate-y-1/3" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+                
+                {/* Shine effect animato */}
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                  animate={{
+                    x: ['-100%', '200%'],
+                  }}
+                  transition={{
+                    duration: 3,
+                    repeat: Infinity,
+                    repeatDelay: 2,
+                    ease: "easeInOut"
+                  }}
+                />
+                
+                <div className="relative z-10 flex items-center justify-center gap-3">
+                  {isCurrentMemberReady ? (
+                    <>
+                      <motion.div
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      >
+                        <Check size={18} className="text-green-300 dark:text-green-200" strokeWidth={3} />
+                      </motion.div>
+                      <span>Pronto</span>
+                    </>
+                  ) : (
+                    <>
+                      <motion.div
+                        animate={{ rotate: [0, 360] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                      >
+                        <Play size={16} className="ml-0.5" fill="currentColor" />
+                      </motion.div>
+                      <span>Pronto</span>
+                    </>
+                  )}
                 </div>
               </HapticButton>
-            ) : (
-              <div className="w-full py-3 px-4 bg-white/5 dark:bg-black/10 backdrop-blur-md rounded-[20px] border border-white/10 dark:border-black/20">
-                <div className="flex items-center justify-center gap-2.5">
-                  <motion.div
-                    animate={{ scale: [1, 1.1, 1] }}
-                    transition={{ duration: 1.5, repeat: Infinity }}
-                    className="flex-shrink-0"
-                  >
-                    <Play className="w-4 h-4 text-purple-500 dark:text-purple-400" fill="currentColor" />
-                  </motion.div>
-                  <div className="flex-1 text-center">
-                    <p className="text-white dark:text-black font-bold text-[11px] italic uppercase tracking-wide">
-                      In attesa che l'host inizi...
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <motion.div
-                      className="w-1.5 h-1.5 bg-purple-500 rounded-full"
-                      animate={{ scale: [1, 1.3, 1], opacity: [0.4, 1, 0.4] }}
-                      transition={{ duration: 1, repeat: Infinity, delay: 0 }}
-                    />
-                    <motion.div
-                      className="w-1.5 h-1.5 bg-purple-500 rounded-full"
-                      animate={{ scale: [1, 1.3, 1], opacity: [0.4, 1, 0.4] }}
-                      transition={{ duration: 1, repeat: Infinity, delay: 0.3 }}
-                    />
-                    <motion.div
-                      className="w-1.5 h-1.5 bg-purple-500 rounded-full"
-                      animate={{ scale: [1, 1.3, 1], opacity: [0.4, 1, 0.4] }}
-                      transition={{ duration: 1, repeat: Infinity, delay: 0.6 }}
-                    />
-                  </div>
-                </div>
-              </div>
             )}
           </div>
         </div>

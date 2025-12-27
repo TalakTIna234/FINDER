@@ -215,7 +215,7 @@ class RoomService {
             user_id: hostId,
             nickname: hostNickname,
             is_host: true,
-            status: 'ready'
+            status: 'lobby'
           });
         
         // Timeout di 2 secondi per inserimento membro
@@ -290,7 +290,7 @@ class RoomService {
           id: hostId,
           nickname: hostNickname,
           isHost: true,
-          status: 'ready'
+          status: 'lobby'
         }],
         status: roomData.status as 'lobby' | 'playing' | 'finished',
         createdAt: new Date(roomData.created_at).getTime()
@@ -387,7 +387,7 @@ class RoomService {
           id: m.user_id,
           nickname: m.nickname,
           isHost: m.is_host,
-          status: m.status as 'ready' | 'playing'
+          status: (m.status || 'lobby') as 'ready' | 'playing' | 'lobby'
         })),
         status: roomData.status as 'lobby' | 'playing' | 'finished',
         createdAt: new Date(roomData.created_at).getTime()
@@ -553,7 +553,7 @@ class RoomService {
     }
   }
 
-  async updateMemberStatus(code: string, userId: string, status: 'ready' | 'playing'): Promise<boolean> {
+  async updateMemberStatus(code: string, userId: string, status: 'ready' | 'playing' | 'lobby'): Promise<boolean> {
     try {
       const room = await this.getRoom(code);
       if (!room) return false;

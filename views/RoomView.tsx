@@ -432,10 +432,21 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
     if (!roomCode) return;
     
     try {
-      // Ricarica la stanza per assicurarsi di avere lo stato più aggiornato
-      // Aspetta un attimo per assicurarsi che eventuali aggiornamenti di stato siano propagati
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // Prima assicurati che l'host stesso sia pronto
+      if (currentUserId) {
+        const currentRoomCheck = await roomService.getRoom(roomCode);
+        if (currentRoomCheck) {
+          const currentMember = currentRoomCheck.members.find(m => m.id === currentUserId);
+          if (currentMember && currentMember.status !== 'ready') {
+            console.log('[RoomView] Host not ready, setting to ready automatically...');
+            await roomService.updateMemberStatus(roomCode, currentUserId, 'ready');
+            // Aspetta un po' per la propagazione
+            await new Promise(resolve => setTimeout(resolve, 300));
+          }
+        }
+      }
       
+      // Ricarica la stanza per assicurarsi di avere lo stato più aggiornato
       const currentRoom = await roomService.getRoom(roomCode);
       if (!currentRoom) {
         console.error('Room not found');

@@ -437,6 +437,7 @@ class RoomService {
           room_id: room.id,
           user_id: userId,
           nickname,
+          status: 'ready' // Imposta inizialmente a 'ready',
           is_host: false,
           status: 'ready'
         })

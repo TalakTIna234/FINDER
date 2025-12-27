@@ -1210,11 +1210,9 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                        {isReady ? '✓ Pronto' : 'In attesa...'}
                      </p>
                    </div>
-                   {isReady && (
-                     <div className="relative z-10">
-                       <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                     </div>
-                   )}
+                   <div className="relative z-10">
+                     <div className={`w-2 h-2 rounded-full ${isReady ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`} />
+                   </div>
                  </div>
                );
              })}

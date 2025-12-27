@@ -210,7 +210,8 @@ class RoomService {
         createdAt: new Date(roomData.created_at).getTime()
       };
 
-      console.log('=== CREATE ROOM SUCCESS ===');
+      const totalTime = Date.now() - createRoomStartTime;
+      console.log(`=== CREATE ROOM SUCCESS (Total time: ${totalTime}ms) ===`);
       console.log('Room object created:', room.code);
       console.log('Room summary:', {
         id: room.id,
@@ -220,12 +221,14 @@ class RoomService {
       });
       
       return room;
-    } catch (error) {
-      console.error('=== CREATE ROOM ERROR ===');
+    } catch (error: any) {
+      const totalTime = Date.now() - createRoomStartTime;
+      console.error(`=== CREATE ROOM ERROR (Total time: ${totalTime}ms) ===`);
       console.error('Error type:', error instanceof Error ? error.constructor.name : typeof error);
       console.error('Error:', error);
+      console.error('Error message:', error?.message);
+      console.error('Error name:', error?.name);
       if (error instanceof Error) {
-        console.error('Error message:', error.message);
         console.error('Error stack:', error.stack);
       }
       // Rilancia l'errore con messaggio più chiaro

@@ -109,22 +109,39 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       // Carica stanza e poi sottoscrivi
       roomService.getRoom(roomCode).then(room => {
         if (room) {
+          console.log('[RoomView] Setting up subscription for room:', roomCode);
           unsubscribe = roomService.subscribeToRoom(roomCode, (updatedRoom) => {
             if (updatedRoom) {
+              console.log('[RoomView] Room updated via subscription:', {
+                code: updatedRoom.code,
+                status: updatedRoom.status,
+                membersCount: updatedRoom.members.length,
+                moviesCount: updatedRoom.movies?.length || 0
+              });
+              
+              // Aggiorna sempre la stanza (per vedere nuovi membri)
               setRoom(updatedRoom);
               
               // Se lo status è cambiato a 'playing', avvia la sessione per tutti i membri
               if (updatedRoom.status === 'playing') {
+                console.log('[RoomView] Room status is playing - checking movies...');
                 if (updatedRoom.movies && updatedRoom.movies.length > 0) {
-                  console.log('[RoomView] Room status changed to playing - starting session for all members with', updatedRoom.movies.length, 'movies');
-                  onStartSession(updatedRoom.movies);
+                  console.log('[RoomView] Starting session for all members with', updatedRoom.movies.length, 'movies');
+                  // Piccolo delay per assicurarsi che lo stato sia aggiornato
+                  setTimeout(() => {
+                    onStartSession(updatedRoom.movies);
+                  }, 100);
                 } else {
                   console.error('[RoomView] Room status is playing but no movies available');
                   alert('Errore: la stanza non ha film. Contatta l\'host.');
                 }
               }
+            } else {
+              console.warn('[RoomView] Subscription callback received null room');
             }
           });
+        } else {
+          console.error('[RoomView] Room not found for subscription:', roomCode);
         }
       });
 

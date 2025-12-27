@@ -20,9 +20,10 @@ interface CardProps {
   isPaused?: boolean;
   isMultiplayer?: boolean;
   userVoted?: boolean;
+  allVoted?: boolean;
 }
 
-const MovieCard: React.FC<CardProps> = ({ movie, onSwipe, isFront, onShowDetails, onRequestTrailer, isPaused = false, isMultiplayer = false, userVoted = false }) => {
+const MovieCard: React.FC<CardProps> = ({ movie, onSwipe, isFront, onShowDetails, onRequestTrailer, isPaused = false, isMultiplayer = false, userVoted = false, allVoted = false }) => {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-25, 25]);
@@ -43,7 +44,7 @@ const MovieCard: React.FC<CardProps> = ({ movie, onSwipe, isFront, onShowDetails
   return (
     <motion.div
       style={{ x, y, rotate, opacity, zIndex: isFront ? 10 : 0 }}
-      drag={isFront && !isPaused && (!isMultiplayer || (isMultiplayer && !userVoted))}
+      drag={isFront && !isPaused && (!isMultiplayer || (isMultiplayer && !userVoted && allVoted))}
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
       onDragEnd={(_, info) => {
         if (info.offset.x > 120) onSwipe('right');
@@ -119,6 +120,10 @@ export const CardStack: React.FC<CardStackProps> = ({
     roomId,
     userId
   });
+  
+  // #region agent log
+  fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:120',message:'CardStack initialized',data:{totalMembers,isMultiplayer,userId,roomId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
   
   const [currentRoundMovies, setCurrentRoundMovies] = useState<Movie[]>(movies || []);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -229,6 +234,10 @@ export const CardStack: React.FC<CardStackProps> = ({
       const votes = await roomService.getVotesForMovie(roomId, movie.id, round);
       setCurrentMovieVotes(votes);
       
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:229',message:'loadVotes - votes loaded',data:{votesCount:votes.length,votes:votes.map(v=>({userId:v.userId,vote:v.vote})),totalMembers,movieId:movie.id,round},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      
       // Controlla se l'utente ha già votato
       const userHasVoted = votes.some(v => v.userId === userId);
       setUserVoted(userHasVoted);
@@ -236,6 +245,10 @@ export const CardStack: React.FC<CardStackProps> = ({
       // Controlla se tutti hanno votato
       const allHaveVoted = votes.length >= totalMembers;
       setAllVoted(allHaveVoted);
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:240',message:'loadVotes - state updated',data:{userHasVoted,allHaveVoted,votesLength:votes.length,totalMembers},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
     };
 
     loadVotes();
@@ -256,10 +269,14 @@ export const CardStack: React.FC<CardStackProps> = ({
     const movie = currentRoundMovies[currentIndex];
     if (!movie) return;
 
-    // Calcola se c'è un match (almeno la metà dei player ha votato like)
+    // Calcola se c'è un match (TUTTI i player devono aver votato like)
     const requiredLikes = getRequiredLikes(totalMembers);
     const likeCount = currentMovieVotes.filter(v => v.vote === 'like').length;
     const isMatch = likeCount >= requiredLikes;
+
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:262',message:'Match calculation',data:{totalMembers,requiredLikes,likeCount,isMatch,allVoted,currentMovieVotes:currentMovieVotes.map(v=>({userId:v.userId,vote:v.vote})),movieId:movie.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
 
     if (isMatch) {
       // Mostra animazione match

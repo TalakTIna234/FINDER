@@ -299,14 +299,32 @@ const App: React.FC = () => {
         setCurrentUserId(user.id);
       } else {
         // Guest mode - usa localStorage
-    const saved = localStorage.getItem('mm_playlist');
-    if (saved) setLikedMovies(JSON.parse(saved));
-    const guestStatus = localStorage.getItem('mm_isGuest');
-    if (guestStatus !== null) setIsGuest(guestStatus === 'true');
-    const savedNick = localStorage.getItem('mm_nickname');
-    if (savedNick) setNickname(savedNick);
-    const savedBio = localStorage.getItem('mm_bio');
-    if (savedBio) setBio(savedBio);
+        const saved = localStorage.getItem('mm_playlist');
+        if (saved) setLikedMovies(JSON.parse(saved));
+        const guestStatus = localStorage.getItem('mm_isGuest');
+        if (guestStatus !== null) setIsGuest(guestStatus === 'true');
+        const savedNick = localStorage.getItem('mm_nickname');
+        if (savedNick) setNickname(savedNick);
+        const savedBio = localStorage.getItem('mm_bio');
+        if (savedBio) setBio(savedBio);
+        
+        // Recupera o genera guest ID per multiplayer
+        let guestId = localStorage.getItem('mm_guest_id');
+        if (!guestId) {
+          // Genera UUID v4 per guest
+          if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+            guestId = crypto.randomUUID();
+          } else {
+            // Fallback per browser che non supportano crypto.randomUUID
+            guestId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+              const r = Math.random() * 16 | 0;
+              const v = c === 'x' ? r : (r & 0x3 | 0x8);
+              return v.toString(16);
+            });
+          }
+          localStorage.setItem('mm_guest_id', guestId);
+        }
+        setCurrentUserId(guestId);
       }
     };
     

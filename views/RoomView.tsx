@@ -38,6 +38,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
   const [room, setRoom] = useState<Room | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { showToast, ToastContainer } = useToast();
+  const [isStartingSession, setIsStartingSession] = useState(false); // Flag per evitare chiamate multiple
   
   // Stati per modalità manuale
   const [manualMovies, setManualMovies] = useState<Movie[]>([]);
@@ -140,8 +141,8 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                 return updatedRoom;
               });
               
-              // Se lo status è cambiato a 'playing', avvia la sessione per tutti i membri
-              if (updatedRoom.status === 'playing') {
+              // Se lo status è cambiato a 'playing', avvia la sessione per tutti i membri (ma non se è l'host che ha già iniziato)
+              if (updatedRoom.status === 'playing' && !isStartingSession) {
                 console.log('[RoomView] Room status is playing - checking movies...');
                 if (updatedRoom.movies && updatedRoom.movies.length > 0) {
                   console.log('[RoomView] Starting session for all members with', updatedRoom.movies.length, 'movies');
@@ -184,7 +185,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
               }
               
               // Aggiorna se lo status della stanza è cambiato a 'playing'
-              if (prevRoom.status !== 'playing' && currentRoom.status === 'playing') {
+              if (prevRoom.status !== 'playing' && currentRoom.status === 'playing' && !isStartingSession) {
                 console.log('[RoomView] Polling detected room status change to playing!');
                 // Avvia la sessione se lo status è playing e ci sono film
                 if (currentRoom.movies && currentRoom.movies.length > 0) {
@@ -515,6 +516,9 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         roomId: roomIdToStart,
         membersCount: membersCountToStart
       });
+      
+      // Imposta flag per evitare che la subscription chiami onStartSession di nuovo
+      setIsStartingSession(true);
       
       // Avvia la sessione immediatamente con i dati già disponibili
       onStartSession(moviesToStart, roomCode, roomIdToStart, membersCountToStart);

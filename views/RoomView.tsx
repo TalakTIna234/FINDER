@@ -201,16 +201,37 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       
       setupSubscription();
       
-      // Polling di fallback per assicurare che l'host veda i nuovi membri
+      // Polling di fallback per assicurare che l'host veda i nuovi membri e il cambio di status
       // (in caso la subscription non funzioni correttamente)
       const pollInterval = setInterval(async () => {
         try {
           const currentRoom = await roomService.getRoom(roomCode);
           if (currentRoom) {
             setRoom(prevRoom => {
+              if (!prevRoom) {
+                console.log('[RoomView] Polling: first room load');
+                return currentRoom;
+              }
+              
+              // Aggiorna se lo status della stanza è cambiato a 'playing'
+              if (prevRoom.status !== 'playing' && currentRoom.status === 'playing') {
+                console.log('[RoomView] Polling detected room status change to playing!');
+                // #region agent log
+                fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'RoomView.tsx:212',message:'polling detected playing status',data:{membersCount:currentRoom.members.length,moviesCount:currentRoom.movies?.length||0},timestamp:Date.now(),sessionId:'debug-start-session',runId:'run5',hypothesisId:'H2'})}).catch(()=>{});
+                // #endregion
+                // Avvia la sessione se lo status è playing e ci sono film
+                if (currentRoom.movies && currentRoom.movies.length > 0) {
+                  console.log('[RoomView] Polling: Starting session with', currentRoom.movies.length, 'movies');
+                  setTimeout(() => {
+                    onStartSession(currentRoom.movies);
+                  }, 100);
+                }
+                return currentRoom;
+              }
+              
               // Aggiorna solo se il numero di membri è cambiato o se ci sono differenze
-              if (!prevRoom || prevRoom.members.length !== currentRoom.members.length) {
-                console.log('[RoomView] Polling detected member change:', prevRoom?.members.length || 0, '->', currentRoom.members.length);
+              if (prevRoom.members.length !== currentRoom.members.length) {
+                console.log('[RoomView] Polling detected member change:', prevRoom.members.length, '->', currentRoom.members.length);
                 return currentRoom;
               }
               // Aggiorna anche se gli status sono cambiati
@@ -228,7 +249,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         } catch (error) {
           console.error('[RoomView] Error in polling:', error);
         }
-      }, 2000); // Poll ogni 2 secondi
+      }, 1000); // Poll ogni 1 secondo per rilevare più velocemente il cambio di status
 
       return () => {
         if (unsubscribe) unsubscribe();

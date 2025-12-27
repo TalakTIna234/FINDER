@@ -432,6 +432,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
     if (!roomCode) return;
     
     try {
+      // Ricarica la stanza per assicurarsi di avere lo stato più aggiornato
       const currentRoom = await roomService.getRoom(roomCode);
       if (!currentRoom) {
         console.error('Room not found');
@@ -439,10 +440,25 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         return;
       }
       
+      console.log('[RoomView] Checking members ready status:', {
+        totalMembers: currentRoom.members.length,
+        members: currentRoom.members.map(m => ({
+          id: m.id,
+          nickname: m.nickname,
+          status: m.status,
+          isHost: m.isHost
+        }))
+      });
+      
       // Verifica che tutti i membri siano pronti
       const allMembersReady = currentRoom.members.every(m => m.status === 'ready');
       if (!allMembersReady) {
-        const notReadyCount = currentRoom.members.filter(m => m.status !== 'ready').length;
+        const notReadyMembers = currentRoom.members.filter(m => m.status !== 'ready');
+        const notReadyCount = notReadyMembers.length;
+        console.log('[RoomView] Not all members ready:', {
+          notReadyCount,
+          notReadyMembers: notReadyMembers.map(m => ({ id: m.id, nickname: m.nickname, status: m.status }))
+        });
         showToast(`${notReadyCount} player non ancora pronti. Attendi che tutti siano pronti!`, 'warning');
         return;
       }

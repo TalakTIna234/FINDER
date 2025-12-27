@@ -383,10 +383,23 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       const success = await roomService.startRoom(roomCode);
       
       if (success) {
-        console.log('[RoomView] Room status updated to playing');
-        // L'host entra immediatamente in sessione
-        // Gli altri membri entreranno automaticamente tramite la subscription real-time
-        onStartSession(currentRoom.movies);
+        console.log('[RoomView] Room status updated to playing in database');
+        
+        // Aspetta un attimo per assicurarsi che il cambio di status sia propagato
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Ricarica la stanza per ottenere lo stato aggiornato
+        const updatedRoom = await roomService.getRoom(roomCode);
+        if (updatedRoom && updatedRoom.status === 'playing' && updatedRoom.movies.length > 0) {
+          console.log('[RoomView] Room confirmed as playing, starting session for host');
+          // L'host entra immediatamente in sessione
+          // Gli altri membri entreranno automaticamente tramite la subscription real-time
+          onStartSession(updatedRoom.movies);
+        } else {
+          console.error('[RoomView] Room not in playing state after update');
+          // Fallback: usa i film della stanza corrente
+          onStartSession(currentRoom.movies);
+        }
       } else {
         console.error('Failed to start room');
         alert('Errore nell\'avvio della sessione. Riprova.');

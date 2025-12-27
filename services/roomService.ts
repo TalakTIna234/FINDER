@@ -613,6 +613,7 @@ class RoomService {
   subscribeToRoom(code: string, callback: (room: Room | null) => void) {
     let roomId: string | null = null;
     let unsubscribe: (() => void) | null = null;
+    let roomChannel: ReturnType<typeof supabase.channel> | null = null;
     
     // Prima carica la stanza per ottenere l'ID
     this.getRoom(code).then(room => {
@@ -621,8 +622,8 @@ class RoomService {
         console.log(`[RoomService] Subscribing to room ${code} (id: ${roomId})`);
         callback(room);
         
-        // Poi sottoscrivi agli aggiornamenti
-        const roomChannel = supabase
+        // Crea il channel con roomId già disponibile
+        roomChannel = supabase
           .channel(`room:${code}`)
           .on('postgres_changes', 
             { 
@@ -636,7 +637,7 @@ class RoomService {
               // Ricarica stanza quando cambia
               this.getRoom(code).then(updatedRoom => {
                 if (updatedRoom) {
-                  console.log(`[RoomService] Room ${code} reloaded, members:`, updatedRoom.members.length);
+                  console.log(`[RoomService] Room ${code} reloaded, members:`, updatedRoom.members.length, updatedRoom.members.map(m => ({ id: m.id, nickname: m.nickname, status: m.status })));
                   callback(updatedRoom);
                 }
               });
@@ -647,17 +648,22 @@ class RoomService {
               event: '*',
               schema: 'public',
               table: 'room_members',
-              filter: `room_id=eq.${roomId}`
+              filter: `room_id=eq.${roomId}` // roomId è già disponibile qui
             },
             (payload) => {
-              console.log(`[RoomService] Room ${code} members changed:`, payload.eventType);
-              // Ricarica stanza quando cambiano i membri
-              this.getRoom(code).then(updatedRoom => {
-                if (updatedRoom) {
-                  console.log(`[RoomService] Room ${code} members reloaded:`, updatedRoom.members.length);
-                  callback(updatedRoom);
-                }
-              });
+              console.log(`[RoomService] Room ${code} members changed:`, payload.eventType, payload);
+              // Piccolo delay per assicurarsi che il DB sia aggiornato
+              setTimeout(() => {
+                // Ricarica stanza quando cambiano i membri
+                this.getRoom(code).then(updatedRoom => {
+                  if (updatedRoom) {
+                    console.log(`[RoomService] Room ${code} members reloaded after change:`, updatedRoom.members.length, updatedRoom.members.map(m => ({ id: m.id, nickname: m.nickname, status: m.status })));
+                    callback(updatedRoom);
+                  } else {
+                    console.error(`[RoomService] Failed to reload room ${code} after member change`);
+                  }
+                });
+              }, 100);
             }
           )
           .subscribe((status) => {
@@ -667,8 +673,12 @@ class RoomService {
         // Salva funzione di cleanup
         unsubscribe = () => {
           console.log(`[RoomService] Unsubscribing from room ${code}`);
-          supabase.removeChannel(roomChannel);
+          if (roomChannel) {
+            supabase.removeChannel(roomChannel);
+          }
         };
+      } else {
+        console.error(`[RoomService] Cannot subscribe to room ${code}: room not found`);
       }
     });
 

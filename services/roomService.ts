@@ -528,6 +528,74 @@ class RoomService {
     }
   }
 
+  // Funzioni per gestire i voti dei film
+  async submitVote(roomId: string, userId: string, movieId: number, vote: 'like' | 'dislike', roundNumber: number): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('movie_votes')
+        .upsert({
+          room_id: roomId,
+          user_id: userId,
+          movie_id: movieId,
+          vote,
+          round_number: roundNumber
+        }, {
+          onConflict: 'room_id,user_id,movie_id,round_number'
+        });
+
+      if (error) {
+        console.error('[submitVote] Error:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('[submitVote] Exception:', error);
+      return false;
+    }
+  }
+
+  async getVotesForMovie(roomId: string, movieId: number, roundNumber: number): Promise<{ userId: string; vote: 'like' | 'dislike' }[]> {
+    try {
+      const { data, error } = await supabase
+        .from('movie_votes')
+        .select('user_id, vote')
+        .eq('room_id', roomId)
+        .eq('movie_id', movieId)
+        .eq('round_number', roundNumber);
+
+      if (error) {
+        console.error('[getVotesForMovie] Error:', error);
+        return [];
+      }
+
+      return (data || []).map(v => ({ userId: v.user_id, vote: v.vote as 'like' | 'dislike' }));
+    } catch (error) {
+      console.error('[getVotesForMovie] Exception:', error);
+      return [];
+    }
+  }
+
+  async clearVotesForRound(roomId: string, roundNumber: number): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('movie_votes')
+        .delete()
+        .eq('room_id', roomId)
+        .eq('round_number', roundNumber);
+
+      if (error) {
+        console.error('[clearVotesForRound] Error:', error);
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('[clearVotesForRound] Exception:', error);
+      return false;
+    }
+  }
+
   // Sottoscrizione real-time per aggiornamenti stanza
   subscribeToRoom(code: string, callback: (room: Room | null) => void) {
     let roomId: string | null = null;
@@ -596,6 +664,28 @@ class RoomService {
                   }
                 });
               }, 100);
+            }
+          )
+          .on('postgres_changes',
+            {
+              event: '*',
+              schema: 'public',
+              table: 'movie_votes'
+            },
+            (payload) => {
+              // Filtra nel codice per questo roomId specifico
+              const changedRoomId = payload.new?.room_id || payload.old?.room_id;
+              if (changedRoomId !== roomId) {
+                return; // Ignora eventi per altre stanze
+              }
+              
+              console.log(`[RoomService] Room ${code} movie votes changed:`, payload.eventType, payload);
+              // Ricarica stanza per notificare il cambio
+              this.getRoom(code).then(updatedRoom => {
+                if (updatedRoom) {
+                  callback(updatedRoom);
+                }
+              });
             }
           )
           .subscribe((status) => {

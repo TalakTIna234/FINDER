@@ -25,6 +25,9 @@ const App: React.FC = () => {
   const [likedMovies, setLikedMovies] = useState<Movie[]>([]);
   const [isSessionActive, setIsSessionActive] = useState(false);
   const [roomViewMode, setRoomViewMode] = useState<'create' | 'join' | null>(null);
+  const [currentRoomCode, setCurrentRoomCode] = useState<string | null>(null);
+  const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
+  const [currentRoomMembers, setCurrentRoomMembers] = useState<number>(1);
   // Carica dark mode da localStorage o usa default true
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('mm_darkMode');
@@ -553,11 +556,28 @@ const App: React.FC = () => {
           isMultiplayer={true}
           userId={currentUserId || undefined}
           userNickname={nickname}
-          totalMembers={roomViewMode ? 2 : 1} // TODO: ottenere numero reale membri dalla stanza
+          totalMembers={currentRoomMembers}
+          roomCode={currentRoomCode || undefined}
+          roomId={currentRoomId || undefined}
         />
       );
     }
-    if (roomViewMode) return <RoomView mode={roomViewMode} onBack={() => setRoomViewMode(null)} onStartSession={(movies) => { setCurrentMovies(movies); setIsSessionActive(true); }} />;
+    if (roomViewMode) return <RoomView 
+      mode={roomViewMode} 
+      onBack={() => {
+        setRoomViewMode(null);
+        setCurrentRoomCode(null);
+        setCurrentRoomId(null);
+        setCurrentRoomMembers(1);
+      }} 
+      onStartSession={(movies, roomCode, roomId, membersCount) => { 
+        setCurrentMovies(movies); 
+        setIsSessionActive(true);
+        setCurrentRoomCode(roomCode || null);
+        setCurrentRoomId(roomId || null);
+        setCurrentRoomMembers(membersCount || 1);
+      }} 
+    />;
 
     switch (activeTab) {
       case 'home': return <HomeView onCreateRoom={() => setRoomViewMode('create')} onJoinRoom={() => setRoomViewMode('join')} toggleTheme={toggleDarkMode} isDarkMode={isDarkMode} isGuest={isGuest} />;

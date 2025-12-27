@@ -8,6 +8,7 @@ import { movieService } from '../services/movieService';
 import { statsService } from '../services/statsService';
 import { Supertrailer } from './Supertrailer';
 import { TrailerVote } from './TrailerVote';
+import { roomService } from '../services/roomService';
 import confetti from 'canvas-confetti';
 
 interface CardProps {
@@ -40,7 +41,7 @@ const MovieCard: React.FC<CardProps> = ({ movie, onSwipe, isFront, onShowDetails
   return (
     <motion.div
       style={{ x, y, rotate, opacity, zIndex: isFront ? 10 : 0 }}
-      drag={isFront && !isPaused}
+      drag={isFront && !isPaused && (!isMultiplayer || !userVoted)}
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
       onDragEnd={(_, info) => {
         if (info.offset.x > 120) onSwipe('right');
@@ -82,22 +83,6 @@ const MovieCard: React.FC<CardProps> = ({ movie, onSwipe, isFront, onShowDetails
           </div>
         )}
         
-        {/* Pulsante trailer se disponibile */}
-        {movieDetails?.trailerKey && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (onRequestTrailer) {
-                onRequestTrailer(movie, movieDetails.trailerKey!);
-              } else {
-                onShowDetails();
-              }
-            }}
-            className="w-full py-2.5 bg-red-600/90 dark:bg-red-500/90 hover:bg-red-600 dark:hover:bg-red-500 text-white rounded-xl font-black text-xs flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all duration-300 backdrop-blur-sm"
-          >
-            <PlayCircle size={16} /> Guarda Trailer
-          </button>
-        )}
       </div>
     </motion.div>
   );
@@ -110,6 +95,8 @@ interface CardStackProps {
   userId?: string;
   userNickname?: string;
   totalMembers?: number;
+  roomCode?: string;
+  roomId?: string;
 }
 
 export const CardStack: React.FC<CardStackProps> = ({ 
@@ -118,7 +105,9 @@ export const CardStack: React.FC<CardStackProps> = ({
   isMultiplayer = false,
   userId,
   userNickname = 'Tu',
-  totalMembers = 1
+  totalMembers = 1,
+  roomCode,
+  roomId
 }) => {
   const [currentRoundMovies, setCurrentRoundMovies] = useState<Movie[]>(movies);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -127,6 +116,12 @@ export const CardStack: React.FC<CardStackProps> = ({
   const [winner, setWinner] = useState<Movie | null>(null);
   const [isInstantMatch, setIsInstantMatch] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  
+  // Stati per votazione multiplayer sincronizzata
+  const [currentMovieVotes, setCurrentMovieVotes] = useState<{ userId: string; vote: 'like' | 'dislike' }[]>([]);
+  const [userVoted, setUserVoted] = useState(false);
+  const [allVoted, setAllVoted] = useState(false);
+  const [votePollInterval, setVotePollInterval] = useState<NodeJS.Timeout | null>(null);
   
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [detailedMovie, setDetailedMovie] = useState<Movie | null>(null);
@@ -177,38 +172,149 @@ export const CardStack: React.FC<CardStackProps> = ({
     }
   }, [selectedMovie]);
 
-  const handleSwipe = (direction: 'left' | 'right' | 'up') => {
+  // Calcola il numero minimo di like necessari per un match (almeno la metà arrotondata per eccesso)
+  const getRequiredLikes = (members: number): number => {
+    return Math.ceil(members / 2);
+  };
+
+  // Carica i voti per il film corrente
+  useEffect(() => {
+    if (!isMultiplayer || !roomId || !userId || currentRoundMovies.length === 0) {
+      setCurrentMovieVotes([]);
+      setUserVoted(false);
+      setAllVoted(false);
+      return;
+    }
+
     const movie = currentRoundMovies[currentIndex];
+    if (!movie) return;
+
+    const loadVotes = async () => {
+      const votes = await roomService.getVotesForMovie(roomId, movie.id, round);
+      setCurrentMovieVotes(votes);
+      
+      // Controlla se l'utente ha già votato
+      const userHasVoted = votes.some(v => v.userId === userId);
+      setUserVoted(userHasVoted);
+      
+      // Controlla se tutti hanno votato
+      const allHaveVoted = votes.length >= totalMembers;
+      setAllVoted(allHaveVoted);
+    };
+
+    loadVotes();
+
+    // Polling per sincronizzare i voti ogni 500ms
+    const interval = setInterval(loadVotes, 500);
+    setVotePollInterval(interval);
+
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isMultiplayer, roomId, userId, currentIndex, round, currentRoundMovies, totalMembers]);
+
+  // Gestisce il passaggio al prossimo film quando tutti hanno votato
+  useEffect(() => {
+    if (!isMultiplayer || !allVoted || !roomId || currentRoundMovies.length === 0) return;
+
+    const movie = currentRoundMovies[currentIndex];
+    if (!movie) return;
+
+    // Calcola se c'è un match (almeno la metà dei player ha votato like)
+    const requiredLikes = getRequiredLikes(totalMembers);
+    const likeCount = currentMovieVotes.filter(v => v.vote === 'like').length;
+    const isMatch = likeCount >= requiredLikes;
+
+    if (isMatch) {
+      // Mostra animazione match
+      setIsInstantMatch(true);
+      triggerConfetti();
+      
+      // Aggiungi ai liked se non è già presente
+      setLikedThisRound(prev => {
+        if (!prev.find(m => m.id === movie.id)) {
+          return [...prev, movie];
+        }
+        return prev;
+      });
+    }
+
+    // Aspetta 1.5 secondi per mostrare l'animazione, poi passa al prossimo film
+    const timeout = setTimeout(() => {
+      setIsInstantMatch(false);
+      moveToNextMovie();
+    }, 1500);
+
+    return () => clearTimeout(timeout);
+  }, [allVoted, currentMovieVotes, isMultiplayer, roomId, currentIndex, round, currentRoundMovies, totalMembers]);
+
+  const moveToNextMovie = async () => {
+    if (currentIndex < currentRoundMovies.length - 1) {
+      setCurrentIndex(prev => prev + 1);
+      setUserVoted(false);
+      setAllVoted(false);
+      setCurrentMovieVotes([]);
+      // Pulisci i dettagli del film precedente
+      setDetailedMovie(null);
+    } else {
+      // Fine del round - pulisci i voti del round precedente
+      if (isMultiplayer && roomId) {
+        await roomService.clearVotesForRound(roomId, round);
+      }
+      
+      // Fine del round
+      if (likedThisRound.length === 0) {
+        setCurrentIndex(0);
+        setLikedThisRound([]);
+        setRound(prev => prev + 1);
+      } else if (likedThisRound.length === 1) {
+        setWinner(likedThisRound[0]);
+        triggerConfetti();
+        statsService.increment('matches_found');
+      } else {
+        setCurrentRoundMovies(likedThisRound);
+        setLikedThisRound([]);
+        setCurrentIndex(0);
+        setRound(prev => prev + 1);
+      }
+    }
+  };
+
+  const handleSwipe = async (direction: 'left' | 'right' | 'up') => {
+    const movie = currentRoundMovies[currentIndex];
+    if (!movie) return;
+
+    // In multiplayer, salva il voto e non permettere lo swipe finché tutti non hanno votato
+    if (isMultiplayer && roomId && userId) {
+      if (userVoted) {
+        // L'utente ha già votato, non permettere di cambiare voto
+        return;
+      }
+
+      const vote: 'like' | 'dislike' = (direction === 'right' || direction === 'up') ? 'like' : 'dislike';
+      
+      // Salva il voto
+      const success = await roomService.submitVote(roomId, userId, movie.id, vote, round);
+      if (success) {
+        setUserVoted(true);
+        // I voti verranno ricaricati dal polling
+      }
+      return;
+    }
+
+    // Modalità single player (comportamento originale)
     let nextLiked = [...likedThisRound];
     
     if (direction === 'right' || direction === 'up') {
       nextLiked.push(movie);
       setLikedThisRound(nextLiked);
       
-      // Animazione Match ad ogni Like (richiesta dall'utente)
       setIsInstantMatch(true);
       triggerConfetti();
       setTimeout(() => setIsInstantMatch(false), 1500);
     }
 
-    if (currentIndex < currentRoundMovies.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-    } else {
-      if (nextLiked.length === 0) {
-        setCurrentIndex(0);
-        setLikedThisRound([]);
-      } else if (nextLiked.length === 1) {
-        setWinner(nextLiked[0]);
-        triggerConfetti();
-        // Incrementa statistiche match
-        statsService.increment('matches_found');
-      } else {
-        setCurrentRoundMovies(nextLiked);
-        setLikedThisRound([]);
-        setCurrentIndex(0);
-        setRound(prev => prev + 1);
-      }
-    }
+    moveToNextMovie();
   };
 
   if (winner) {
@@ -285,6 +391,13 @@ export const CardStack: React.FC<CardStackProps> = ({
         <p className="text-[9px] text-white/20 dark:text-black/30 font-black uppercase tracking-widest transition-opacity duration-500">
            Film {currentIndex + 1} di {currentRoundMovies.length}
         </p>
+        {isMultiplayer && roomId && (
+          <div className="mt-2 bg-white/5 dark:bg-black/10 ios-blur px-3 py-1 rounded-full border border-white/10 dark:border-black/20">
+            <p className="text-[9px] text-white/60 dark:text-black/60 font-bold">
+              {userVoted ? '✓ Hai votato' : 'Vota ora'} • {currentMovieVotes.length}/{totalMembers} voti
+            </p>
+          </div>
+        )}
       </header>
 
       <div className="relative w-full h-[65vh] flex justify-center perspective-[1000px]">
@@ -309,7 +422,7 @@ export const CardStack: React.FC<CardStackProps> = ({
         <HapticButton 
           impact="heavy"
           onClick={() => handleSwipe('left')}
-          disabled={isPaused}
+          disabled={isPaused || (isMultiplayer && userVoted)}
           className="w-16 h-16 rounded-full bg-white/5 dark:bg-black/10 border border-white/10 dark:border-black/20 flex items-center justify-center text-red-500 dark:text-red-600 shadow-xl active:bg-red-500/10 dark:active:bg-red-600/20 transition-colors duration-500 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <X size={32} strokeWidth={3} />
@@ -318,7 +431,7 @@ export const CardStack: React.FC<CardStackProps> = ({
         <HapticButton 
           impact="heavy"
           onClick={() => handleSwipe('up')}
-          disabled={isPaused}
+          disabled={isPaused || (isMultiplayer && userVoted)}
           className="w-16 h-16 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white shadow-xl scale-125 ring-4 ring-black dark:ring-white transition-colors duration-500 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <Star size={32} fill="currentColor" strokeWidth={0} />
@@ -327,11 +440,31 @@ export const CardStack: React.FC<CardStackProps> = ({
         <HapticButton 
           impact="heavy"
           onClick={() => handleSwipe('right')}
-          disabled={isPaused}
+          disabled={isPaused || (isMultiplayer && userVoted)}
           className="w-16 h-16 rounded-full bg-green-500 dark:bg-green-600 flex items-center justify-center text-white shadow-xl active:bg-green-400 dark:active:bg-green-500 transition-colors duration-500 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <Heart size={32} fill="currentColor" strokeWidth={0} />
         </HapticButton>
+        
+        {/* Pulsante trailer in basso (solo se disponibile) */}
+        {isMultiplayer && currentRoundMovies[currentIndex] && (
+          <HapticButton
+            impact="medium"
+            onClick={async () => {
+              const movie = currentRoundMovies[currentIndex];
+              if (movie) {
+                const details = await movieService.getMovieDetails(movie.id);
+                if (details?.trailerKey && onRequestTrailer) {
+                  onRequestTrailer(movie, details.trailerKey);
+                }
+              }
+            }}
+            disabled={isPaused || (isMultiplayer && userVoted)}
+            className="w-16 h-16 rounded-full bg-white/5 dark:bg-black/10 border border-white/10 dark:border-black/20 flex items-center justify-center text-white dark:text-black shadow-xl active:bg-white/10 dark:active:bg-black/20 transition-colors duration-500 disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <PlayCircle size={24} />
+          </HapticButton>
+        )}
       </div>
 
       {/* Supertrailer Overlay */}

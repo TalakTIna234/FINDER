@@ -26,7 +26,7 @@ function generateUUID(): string {
 
 interface Props {
   onBack: () => void;
-  onStartSession: (movies: Movie[]) => void;
+  onStartSession: (movies: Movie[], roomCode?: string, roomId?: string, membersCount?: number) => void;
   mode: 'create' | 'join';
 }
 
@@ -95,7 +95,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
           if (currentRoom.status === 'playing') {
             if (currentRoom.movies && currentRoom.movies.length > 0) {
               console.log('[RoomView] Room is already playing - starting session automatically with', currentRoom.movies.length, 'movies');
-              onStartSession(currentRoom.movies);
+              onStartSession(currentRoom.movies, roomCode, currentRoom.id, currentRoom.members.length);
             } else {
               console.error('[RoomView] Room is already playing but no movies available');
             }
@@ -145,7 +145,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                   console.log('[RoomView] Starting session for all members with', updatedRoom.movies.length, 'movies');
                   // Piccolo delay per assicurarsi che lo stato sia aggiornato
                   setTimeout(() => {
-                    onStartSession(updatedRoom.movies);
+                    onStartSession(updatedRoom.movies, roomCode, updatedRoom.id, updatedRoom.members.length);
                   }, 100);
                 } else {
                   console.error('[RoomView] Room status is playing but no movies available');
@@ -167,7 +167,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                         const success = await roomService.startRoom(roomCode);
                         if (success) {
                           setTimeout(() => {
-                            onStartSession(room.movies);
+                            onStartSession(room.movies, roomCode, room.id, room.members.length);
                           }, 300);
                         }
                       }
@@ -208,7 +208,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                 if (currentRoom.movies && currentRoom.movies.length > 0) {
                   console.log('[RoomView] Polling: Starting session with', currentRoom.movies.length, 'movies');
                   setTimeout(() => {
-                    onStartSession(currentRoom.movies);
+                    onStartSession(currentRoom.movies, roomCode, currentRoom.id, currentRoom.members.length);
                   }, 100);
                 }
                 return currentRoom;
@@ -478,11 +478,11 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
           console.log('[RoomView] Room confirmed as playing, starting session for host');
           // L'host entra immediatamente in sessione
           // Gli altri membri entreranno automaticamente tramite la subscription real-time
-          onStartSession(updatedRoom.movies);
+          onStartSession(updatedRoom.movies, roomCode, updatedRoom.id, updatedRoom.members.length);
         } else {
           console.error('[RoomView] Room not in playing state after update');
           // Fallback: usa i film della stanza corrente
-          onStartSession(currentRoom.movies);
+          onStartSession(currentRoom.movies, roomCode, currentRoom.id, currentRoom.members.length);
         }
       } else {
         console.error('Failed to start room');

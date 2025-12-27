@@ -536,6 +536,9 @@ class RoomService {
   }
 
   async startRoom(code: string): Promise<boolean> {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'roomService.ts:538',message:'startRoom entry',data:{code},timestamp:Date.now(),sessionId:'debug-start-session',runId:'run3',hypothesisId:'H1'})}).catch(()=>{});
+    // #endregion
     try {
       const room = await this.getRoom(code);
       if (!room) {
@@ -549,6 +552,10 @@ class RoomService {
         .update({ status: 'playing', updated_at: new Date().toISOString() })
         .eq('code', code)
         .select();
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'roomService.ts:550',message:'startRoom update result',data:{error:error?.code,errorMessage:error?.message,rowsUpdated:data?.length||0},timestamp:Date.now(),sessionId:'debug-start-session',runId:'run3',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
 
       if (error) {
         console.error('[startRoom] Error updating room:', error);
@@ -558,6 +565,9 @@ class RoomService {
       console.log('[startRoom] Room status updated successfully:', data);
       return true;
     } catch (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'roomService.ts:563',message:'startRoom exception',data:{errorMessage:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-start-session',runId:'run3',hypothesisId:'H1'})}).catch(()=>{});
+      // #endregion
       console.error('[startRoom] Exception:', error);
       return false;
     }

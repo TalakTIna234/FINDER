@@ -257,10 +257,18 @@ export const CardStack: React.FC<CardStackProps> = ({
     const movie = currentRoundMovies[currentIndex];
     if (!movie) return;
 
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:254',message:'allVoted effect triggered',data:{allVoted,currentIndex,movieId:movie.id,round,votesCount:currentMovieVotes.length,votes:currentMovieVotes.map(v=>({userId:v.userId,vote:v.vote})),totalMembers},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+    // #endregion
+
     // Calcola se c'è un match (TUTTI i player devono aver votato like)
     const requiredLikes = getRequiredLikes(totalMembers);
     const likeCount = currentMovieVotes.filter(v => v.vote === 'like').length;
     const isMatch = likeCount >= requiredLikes;
+
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:263',message:'Match calculation',data:{requiredLikes,likeCount,isMatch,totalMembers},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+    // #endregion
 
     if (isMatch) {
       // Mostra animazione match
@@ -276,24 +284,42 @@ export const CardStack: React.FC<CardStackProps> = ({
       });
     }
 
-    // Aspetta 1.5 secondi per mostrare l'animazione, poi passa al prossimo film
+    // Aspetta 1.5 secondi per mostrare l'animazione (se c'è match), poi passa al prossimo film
+    // Se non c'è match, passa immediatamente al prossimo film
+    const delay = isMatch ? 1500 : 500; // Delay più breve se non c'è match
     const timeout = setTimeout(() => {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:282',message:'Moving to next movie',data:{currentIndex,movieId:movie.id,isMatch,delay},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+      // #endregion
       setIsInstantMatch(false);
       moveToNextMovie();
-    }, 1500);
+    }, delay);
 
     return () => clearTimeout(timeout);
   }, [allVoted, currentMovieVotes, isMultiplayer, roomId, currentIndex, round, currentRoundMovies, totalMembers]);
 
   const moveToNextMovie = async () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:288',message:'moveToNextMovie called',data:{currentIndex,totalMovies:currentRoundMovies.length,round,isMultiplayer},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'K'})}).catch(()=>{});
+    // #endregion
+    
     setIsInstantMatch(false); // Resetta sempre l'animazione match
     if (currentIndex < currentRoundMovies.length - 1) {
+      // Pulisci i voti del film corrente prima di passare al prossimo
+      if (isMultiplayer && roomId) {
+        await roomService.clearVotesForRound(roomId, round);
+      }
+      
       setCurrentIndex(prev => prev + 1);
       setUserVoted(false);
       setAllVoted(false);
       setCurrentMovieVotes([]);
       // Pulisci i dettagli del film precedente
       setDetailedMovie(null);
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:300',message:'Moved to next movie',data:{newIndex:currentIndex + 1},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'K'})}).catch(()=>{});
+      // #endregion
     } else {
       // Fine del round - pulisci i voti del round precedente
       if (isMultiplayer && roomId) {

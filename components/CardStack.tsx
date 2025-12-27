@@ -211,9 +211,10 @@ export const CardStack: React.FC<CardStackProps> = ({
   }, [isMultiplayer, currentIndex, currentRoundMovies]);
 
   // Calcola il numero minimo di like necessari per un match
-  // In multiplayer serve che TUTTI i player mettano like (100%)
+  // Serve almeno la metà dei player (arrotondata per eccesso)
+  // 1 player = 1 like, 2 players = 2 likes, 3 players = 2 likes, 4 players = 2 likes, ecc.
   const getRequiredLikes = (members: number): number => {
-    return members; // Serve il like di tutti i player
+    return Math.ceil(members / 2);
   };
 
   // Carica i voti per il film corrente
@@ -269,19 +270,19 @@ export const CardStack: React.FC<CardStackProps> = ({
     processedVotesRef.current = currentMovieVotes;
 
     // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:254',message:'allVoted effect triggered',data:{allVoted,currentIndex,movieId:movie.id,round,votesCount:currentMovieVotes.length,votes:currentMovieVotes.map(v=>({userId:v.userId,vote:v.vote})),totalMembers,hasProcessedVotes},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:262',message:'allVoted effect triggered',data:{allVoted,currentIndex,movieId:movie.id,round,votesCount:currentMovieVotes.length,votes:currentMovieVotes.map(v=>({userId:v.userId,vote:v.vote})),totalMembers,hasProcessedVotes},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
     // #endregion
 
-    // Segna che abbiamo processato i voti per questo film
+    // Segna IMMEDIATAMENTE che abbiamo processato i voti per questo film per evitare ri-esecuzioni
     setHasProcessedVotes(true);
 
-    // Calcola se c'è un match (TUTTI i player devono aver votato like) usando i voti salvati nel ref
+    // Calcola se c'è un match (almeno la metà dei player deve aver votato like) usando i voti salvati nel ref
     const requiredLikes = getRequiredLikes(totalMembers);
     const likeCount = processedVotesRef.current.filter(v => v.vote === 'like').length;
     const isMatch = likeCount >= requiredLikes;
 
     // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:263',message:'Match calculation',data:{requiredLikes,likeCount,isMatch,totalMembers},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:279',message:'Match calculation',data:{requiredLikes,likeCount,isMatch,totalMembers,votes:processedVotesRef.current.map(v=>({userId:v.userId,vote:v.vote}))},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
     // #endregion
 
     if (isMatch) {
@@ -299,18 +300,23 @@ export const CardStack: React.FC<CardStackProps> = ({
     }
 
     // Aspetta 1.5 secondi per mostrare l'animazione (se c'è match), poi passa al prossimo film
-    // Se non c'è match, passa immediatamente al prossimo film
-    const delay = isMatch ? 1500 : 500; // Delay più breve se non c'è match
+    // Se non c'è match, passa immediatamente al prossimo film (500ms)
+    const delay = isMatch ? 1500 : 500;
     const timeout = setTimeout(() => {
       // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:282',message:'Moving to next movie',data:{currentIndex,movieId:movie.id,isMatch,delay},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:304',message:'Moving to next movie (timeout executed)',data:{currentIndex,movieId:movie.id,isMatch,delay},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
       // #endregion
       setIsInstantMatch(false);
       moveToNextMovie();
     }, delay);
 
-    return () => clearTimeout(timeout);
-  }, [allVoted, isMultiplayer, roomId, currentIndex, round, currentRoundMovies, totalMembers, hasProcessedVotes]);
+    return () => {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:312',message:'allVoted effect cleanup - clearing timeout',data:{currentIndex,movieId:movie.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+      // #endregion
+      clearTimeout(timeout);
+    };
+  }, [allVoted, isMultiplayer, roomId, currentIndex, round, totalMembers, hasProcessedVotes]);
 
   const moveToNextMovie = async () => {
     // #region agent log

@@ -670,12 +670,22 @@ class RoomService {
             {
               event: '*',
               schema: 'public',
-              table: 'room_members',
-              filter: `room_id=eq.${roomId}` // Filtra per room_id (UUID)
+              table: 'room_members'
+              // RIMOSSO filter - riceviamo TUTTI gli eventi e filtriamo nel codice
+              // Questo risolve il problema del filtro UUID che non funziona correttamente
             },
             (payload) => {
+              // Filtra nel codice per questo roomId specifico
+              const changedRoomId = payload.new?.room_id || payload.old?.room_id;
+              if (changedRoomId !== roomId) {
+                // #region agent log
+                fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'roomService.ts:678',message:'subscription member change filtered out',data:{eventType:payload.eventType,changedRoomId,ourRoomId:roomId,matches:false},timestamp:Date.now(),sessionId:'debug-multiplayer',runId:'run2',hypothesisId:'H1'})}).catch(()=>{});
+                // #endregion
+                return; // Ignora eventi per altre stanze
+              }
+              
               // #region agent log
-              fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'roomService.ts:653',message:'subscription member change event',data:{eventType:payload.eventType,roomId:payload.new?.room_id||payload.old?.room_id},timestamp:Date.now(),sessionId:'debug-multiplayer',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+              fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'roomService.ts:685',message:'subscription member change event',data:{eventType:payload.eventType,roomId:changedRoomId,payloadNew:payload.new,payloadOld:payload.old},timestamp:Date.now(),sessionId:'debug-multiplayer',runId:'run2',hypothesisId:'H1'})}).catch(()=>{});
               // #endregion
               console.log(`[RoomService] Room ${code} members changed:`, payload.eventType, payload);
               // Piccolo delay per assicurarsi che il DB sia aggiornato

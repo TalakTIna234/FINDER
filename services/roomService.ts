@@ -437,9 +437,8 @@ class RoomService {
           room_id: room.id,
           user_id: userId,
           nickname,
-          status: 'lobby' // Imposta inizialmente a 'lobby' (non pronto),
           is_host: false,
-          status: 'ready'
+          status: 'lobby' // Imposta inizialmente a 'lobby' (non pronto)
         })
         .select()
         .single();
@@ -507,10 +506,10 @@ class RoomService {
         return false;
       }
 
-      // Reset tutti i membri a 'ready'
+      // Reset tutti i membri a 'lobby' (non pronti)
       const { error: membersError } = await supabase
         .from('room_members')
-        .update({ status: 'ready' })
+        .update({ status: 'lobby' })
         .eq('room_id', room.id);
 
       if (membersError) {

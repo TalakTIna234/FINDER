@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useMotionValue, useTransform } from 'framer-motion';
 import { Movie } from '../types';
 import { X, Heart, Star, PlayCircle, Info, ChevronDown, Trophy, CheckCircle2, Sparkles } from 'lucide-react';
@@ -319,6 +319,7 @@ export const CardStack: React.FC<CardStackProps> = ({
     
     setIsInstantMatch(false); // Resetta sempre l'animazione match
     setHasProcessedVotes(false); // Reset del flag per il prossimo film
+    processedVotesRef.current = []; // Reset del ref
     if (currentIndex < currentRoundMovies.length - 1) {
       // Pulisci i voti del film corrente prima di passare al prossimo
       if (isMultiplayer && roomId) {

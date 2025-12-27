@@ -442,6 +442,8 @@ export const CardStack: React.FC<CardStackProps> = ({
               } : undefined}
               isFront={idx === 1 || currentRoundMovies.length - currentIndex === 1}
               isPaused={isPaused}
+              isMultiplayer={isMultiplayer}
+              userVoted={userVoted}
             />
           ))}
         </AnimatePresence>

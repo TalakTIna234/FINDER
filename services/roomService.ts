@@ -546,19 +546,29 @@ class RoomService {
         return false;
       }
 
-      console.log('[startRoom] Updating room status to playing:', code);
+      console.log('[startRoom] Updating room status to playing:', code, 'roomId:', room.id);
+      // Usa room.id invece di code per garantire che l'update funzioni
       const { data, error } = await supabase
         .from('rooms')
         .update({ status: 'playing', updated_at: new Date().toISOString() })
-        .eq('code', code)
+        .eq('id', room.id) // Usa id invece di code per maggiore affidabilità
         .select();
       
       // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'roomService.ts:550',message:'startRoom update result',data:{error:error?.code,errorMessage:error?.message,rowsUpdated:data?.length||0},timestamp:Date.now(),sessionId:'debug-start-session',runId:'run3',hypothesisId:'H1'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'roomService.ts:550',message:'startRoom update result',data:{error:error?.code,errorMessage:error?.message,rowsUpdated:data?.length||0,roomId:room.id},timestamp:Date.now(),sessionId:'debug-start-session',runId:'run3',hypothesisId:'H1'})}).catch(()=>{});
       // #endregion
 
       if (error) {
         console.error('[startRoom] Error updating room:', error);
+        return false;
+      }
+
+      // Controlla che almeno una riga sia stata aggiornata
+      if (!data || data.length === 0) {
+        console.error('[startRoom] No rows updated - RLS policy or room not found');
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'roomService.ts:565',message:'startRoom no rows updated',data:{roomId:room.id,code},timestamp:Date.now(),sessionId:'debug-start-session',runId:'run3',hypothesisId:'H1'})}).catch(()=>{});
+        // #endregion
         return false;
       }
 

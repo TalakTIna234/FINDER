@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle, AlertCircle, Info, X } from 'lucide-react';
 
@@ -58,7 +58,7 @@ export const Toast: React.FC<ToastProps> = ({ message, type = 'info', duration =
 
 // Hook per gestire i toast
 export const useToast = () => {
-  const [toasts, setToasts] = React.useState<Array<{ id: string; message: string; type: ToastType }>>([]);
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: ToastType }>>([]);
 
   const showToast = (message: string, type: ToastType = 'info') => {
     const id = Math.random().toString(36).substring(7);

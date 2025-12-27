@@ -43,7 +43,7 @@ const MovieCard: React.FC<CardProps> = ({ movie, onSwipe, isFront, onShowDetails
   return (
     <motion.div
       style={{ x, y, rotate, opacity, zIndex: isFront ? 10 : 0 }}
-      drag={isFront && !isPaused && (!isMultiplayer || !userVoted)}
+      drag={isFront && !isPaused && (!isMultiplayer || (isMultiplayer && !userVoted))}
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
       onDragEnd={(_, info) => {
         if (info.offset.x > 120) onSwipe('right');
@@ -137,6 +137,7 @@ export const CardStack: React.FC<CardStackProps> = ({
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [detailedMovie, setDetailedMovie] = useState<Movie | null>(null);
   const [showTrailerInApp, setShowTrailerInApp] = useState(false);
+  const [currentMovieHasTrailer, setCurrentMovieHasTrailer] = useState(false);
   
   // Sistema trailer
   const [trailersUsed, setTrailersUsed] = useState<number>(0);
@@ -194,9 +195,22 @@ export const CardStack: React.FC<CardStackProps> = ({
     }
   }, [selectedMovie]);
 
-  // Calcola il numero minimo di like necessari per un match (almeno la metà arrotondata per eccesso)
+  // Verifica se il film corrente ha un trailer disponibile
+  useEffect(() => {
+    if (isMultiplayer && currentRoundMovies[currentIndex]) {
+      const movie = currentRoundMovies[currentIndex];
+      movieService.getMovieDetails(movie.id).then(details => {
+        setCurrentMovieHasTrailer(!!details?.trailerKey);
+      });
+    } else {
+      setCurrentMovieHasTrailer(false);
+    }
+  }, [isMultiplayer, currentIndex, currentRoundMovies]);
+
+  // Calcola il numero minimo di like necessari per un match
+  // In multiplayer serve che TUTTI i player mettano like (100%)
   const getRequiredLikes = (members: number): number => {
-    return Math.ceil(members / 2);
+    return members; // Serve il like di tutti i player
   };
 
   // Carica i voti per il film corrente
@@ -310,6 +324,11 @@ export const CardStack: React.FC<CardStackProps> = ({
     if (isMultiplayer && roomId && userId) {
       if (userVoted) {
         // L'utente ha già votato, non permettere di cambiare voto
+        return;
+      }
+      
+      // Non permettere di votare se non tutti hanno ancora votato il film precedente
+      if (!allVoted && currentMovieVotes.length > 0) {
         return;
       }
 
@@ -453,7 +472,7 @@ export const CardStack: React.FC<CardStackProps> = ({
         <HapticButton 
           impact="heavy"
           onClick={() => handleSwipe('left')}
-          disabled={isPaused || (isMultiplayer && userVoted)}
+          disabled={isPaused || (isMultiplayer && (userVoted || !allVoted))}
           className="w-16 h-16 rounded-full bg-white/5 dark:bg-black/10 border border-white/10 dark:border-black/20 flex items-center justify-center text-red-500 dark:text-red-600 shadow-xl active:bg-red-500/10 dark:active:bg-red-600/20 transition-colors duration-500 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <X size={32} strokeWidth={3} />
@@ -462,7 +481,7 @@ export const CardStack: React.FC<CardStackProps> = ({
         <HapticButton 
           impact="heavy"
           onClick={() => handleSwipe('up')}
-          disabled={isPaused || (isMultiplayer && userVoted)}
+          disabled={isPaused || (isMultiplayer && (userVoted || !allVoted))}
           className="w-16 h-16 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white shadow-xl scale-125 ring-4 ring-black dark:ring-white transition-colors duration-500 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <Star size={32} fill="currentColor" strokeWidth={0} />
@@ -471,7 +490,7 @@ export const CardStack: React.FC<CardStackProps> = ({
         <HapticButton 
           impact="heavy"
           onClick={() => handleSwipe('right')}
-          disabled={isPaused || (isMultiplayer && userVoted)}
+          disabled={isPaused || (isMultiplayer && (userVoted || !allVoted))}
           className="w-16 h-16 rounded-full bg-green-500 dark:bg-green-600 flex items-center justify-center text-white shadow-xl active:bg-green-400 dark:active:bg-green-500 transition-colors duration-500 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <Heart size={32} fill="currentColor" strokeWidth={0} />
@@ -490,7 +509,7 @@ export const CardStack: React.FC<CardStackProps> = ({
                 }
               }
             }}
-            disabled={isPaused || (isMultiplayer && userVoted)}
+            disabled={isPaused || (isMultiplayer && (userVoted || !allVoted))}
             className="w-16 h-16 rounded-full bg-white/5 dark:bg-black/10 border border-white/10 dark:border-black/20 flex items-center justify-center text-white dark:text-black shadow-xl active:bg-white/10 dark:active:bg-black/20 transition-colors duration-500 disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <PlayCircle size={24} />

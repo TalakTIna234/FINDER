@@ -179,10 +179,15 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
               console.warn('[RoomView] Subscription callback received null room');
             }
           });
-        } else {
-          console.error('[RoomView] Room not found for subscription:', roomCode);
+          } else {
+            console.error('[RoomView] Room not found for subscription:', roomCode);
+          }
+        } catch (error) {
+          console.error('[RoomView] Error setting up subscription:', error);
         }
-      });
+      };
+      
+      setupSubscription();
 
       return () => {
         if (unsubscribe) unsubscribe();

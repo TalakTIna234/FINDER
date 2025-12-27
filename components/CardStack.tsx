@@ -134,6 +134,7 @@ export const CardStack: React.FC<CardStackProps> = ({
   const [userVoted, setUserVoted] = useState(false);
   const [allVoted, setAllVoted] = useState(false);
   const [votePollInterval, setVotePollInterval] = useState<NodeJS.Timeout | null>(null);
+  const [hasProcessedVotes, setHasProcessedVotes] = useState(false); // Flag per prevenire riprocessamento
   
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [detailedMovie, setDetailedMovie] = useState<Movie | null>(null);
@@ -258,14 +259,17 @@ export const CardStack: React.FC<CardStackProps> = ({
 
   // Gestisce il passaggio al prossimo film quando tutti hanno votato
   useEffect(() => {
-    if (!isMultiplayer || !allVoted || !roomId || currentRoundMovies.length === 0) return;
+    if (!isMultiplayer || !allVoted || !roomId || currentRoundMovies.length === 0 || hasProcessedVotes) return;
 
     const movie = currentRoundMovies[currentIndex];
     if (!movie) return;
 
     // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:254',message:'allVoted effect triggered',data:{allVoted,currentIndex,movieId:movie.id,round,votesCount:currentMovieVotes.length,votes:currentMovieVotes.map(v=>({userId:v.userId,vote:v.vote})),totalMembers},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:254',message:'allVoted effect triggered',data:{allVoted,currentIndex,movieId:movie.id,round,votesCount:currentMovieVotes.length,votes:currentMovieVotes.map(v=>({userId:v.userId,vote:v.vote})),totalMembers,hasProcessedVotes},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
     // #endregion
+
+    // Segna che abbiamo processato i voti per questo film
+    setHasProcessedVotes(true);
 
     // Calcola se c'è un match (TUTTI i player devono aver votato like)
     const requiredLikes = getRequiredLikes(totalMembers);
@@ -302,7 +306,7 @@ export const CardStack: React.FC<CardStackProps> = ({
     }, delay);
 
     return () => clearTimeout(timeout);
-  }, [allVoted, currentMovieVotes, isMultiplayer, roomId, currentIndex, round, currentRoundMovies, totalMembers]);
+  }, [allVoted, isMultiplayer, roomId, currentIndex, round, currentRoundMovies, totalMembers, hasProcessedVotes]);
 
   const moveToNextMovie = async () => {
     // #region agent log
@@ -310,6 +314,7 @@ export const CardStack: React.FC<CardStackProps> = ({
     // #endregion
     
     setIsInstantMatch(false); // Resetta sempre l'animazione match
+    setHasProcessedVotes(false); // Reset del flag per il prossimo film
     if (currentIndex < currentRoundMovies.length - 1) {
       // Pulisci i voti del film corrente prima di passare al prossimo
       if (isMultiplayer && roomId) {

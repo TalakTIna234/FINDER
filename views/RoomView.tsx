@@ -520,22 +520,21 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       // Imposta flag per evitare che la subscription chiami onStartSession di nuovo
       setIsStartingSession(true);
       
-      // Avvia la sessione immediatamente con i dati già disponibili
-      onStartSession(moviesToStart, roomCode, roomIdToStart, membersCountToStart);
-      
-      // POI aggiorna lo status della stanza (la subscription gestirà gli altri player)
+      // POI aggiorna lo status della stanza PRIMA di chiamare onStartSession
+      // (così la subscription non chiamerà onStartSession perché il flag è già settato)
       const success = await roomService.startRoom(roomCode);
       
       if (!success) {
         console.error('[RoomView] Failed to update room status to playing');
+        setIsStartingSession(false); // Reset flag in caso di errore
         showToast('Errore nell\'aggiornamento dello status della stanza.', 'error');
-      } else {
-        console.log('[RoomView] Room status updated to playing in database');
+        return;
       }
-      } else {
-        console.error('Failed to start room');
-        showToast('Errore nell\'avvio della sessione. Riprova.', 'error');
-      }
+      
+      console.log('[RoomView] Room status updated to playing in database');
+      
+      // Avvia la sessione immediatamente con i dati già disponibili (dopo aver aggiornato lo status)
+      onStartSession(moviesToStart, roomCode, roomIdToStart, membersCountToStart);
     } catch (error) {
       console.error('Error starting session:', error);
       showToast('Errore nell\'avvio della sessione. Riprova.', 'error');
@@ -1411,7 +1410,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                         animate={{ scale: [1, 1.2, 1] }}
                         transition={{ duration: 1.5, repeat: Infinity }}
                       >
-                        <Check size={18} className="text-green-300 dark:text-green-200" strokeWidth={3} />
+                        <Check size={18} className="text-green-300 dark:text-green-200" strokeWidth={3} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} />
                       </motion.div>
                       <span>Pronto</span>
                     </>

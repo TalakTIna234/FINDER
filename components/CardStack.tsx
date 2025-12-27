@@ -343,14 +343,15 @@ export const CardStack: React.FC<CardStackProps> = ({
 
     return () => {
       // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:318',message:'allVoted effect cleanup - clearing timeout',data:{currentIndex},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:346',message:'allVoted effect cleanup - clearing timeout',data:{currentIndex},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
       // #endregion
       if (matchTimeoutRef.current) {
         clearTimeout(matchTimeoutRef.current);
         matchTimeoutRef.current = null;
       }
     };
-  }, [allVoted, isMultiplayer, roomId, currentIndex, round, totalMembers, hasProcessedVotes]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allVoted, isMultiplayer, roomId, currentIndex, round, totalMembers]);
 
   const moveToNextMovie = async () => {
     // #region agent log

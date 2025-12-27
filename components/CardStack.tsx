@@ -344,8 +344,10 @@ export const CardStack: React.FC<CardStackProps> = ({
         return;
       }
       
-      // Non permettere di votare se non tutti hanno ancora votato il film precedente
-      if (!allVoted && currentMovieVotes.length > 0) {
+      // Non permettere di votare se non tutti hanno ancora votato (blocca finché tutti non votano)
+      // Ma permette il primo voto (quando currentMovieVotes.length === 0)
+      if (currentMovieVotes.length > 0 && !allVoted) {
+        // Ci sono già voti ma non tutti hanno votato, blocca
         return;
       }
 

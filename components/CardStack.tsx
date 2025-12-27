@@ -510,7 +510,7 @@ export const CardStack: React.FC<CardStackProps> = ({
         <HapticButton 
           impact="heavy"
           onClick={() => handleSwipe('up')}
-          disabled={isPaused || (isMultiplayer && (userVoted || !allVoted))}
+          disabled={isPaused || (isMultiplayer && userVoted)}
           className="w-16 h-16 rounded-full bg-blue-600 dark:bg-blue-500 flex items-center justify-center text-white shadow-xl scale-125 ring-4 ring-black dark:ring-white transition-colors duration-500 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <Star size={32} fill="currentColor" strokeWidth={0} />
@@ -529,7 +529,7 @@ export const CardStack: React.FC<CardStackProps> = ({
                 }
               }
             }}
-            disabled={isPaused || (isMultiplayer && (userVoted || !allVoted))}
+            disabled={isPaused || (isMultiplayer && userVoted)}
             className="group relative w-16 h-16 rounded-full backdrop-blur-2xl border border-purple-500/40 dark:border-purple-400/40 flex items-center justify-center text-purple-400 dark:text-purple-300 shadow-2xl disabled:opacity-30 disabled:cursor-not-allowed overflow-hidden transition-all duration-300 active:scale-95"
             style={{
               background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(147, 51, 234, 0.15) 100%)'

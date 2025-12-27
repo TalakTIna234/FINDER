@@ -161,6 +161,17 @@ export const CardStack: React.FC<CardStackProps> = ({
     localStorage.removeItem('mm_trailers_used');
   }, [movies]);
 
+  // Assicurati che currentRoundMovies sia aggiornato quando movies cambia
+  useEffect(() => {
+    if (movies && movies.length > 0) {
+      console.log('[CardStack] Movies prop updated, setting currentRoundMovies:', movies.length, 'movies');
+      setCurrentRoundMovies(movies);
+      setCurrentIndex(0);
+      setLikedThisRound([]);
+      setRound(1);
+    }
+  }, [movies]);
+
   const triggerConfetti = () => {
     confetti({
       particleCount: 80,

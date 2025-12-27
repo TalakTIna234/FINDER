@@ -554,23 +554,36 @@ class RoomService {
 
   async updateMemberStatus(code: string, userId: string, status: 'ready' | 'playing' | 'lobby'): Promise<boolean> {
     try {
+      console.log('[updateMemberStatus] Called with:', { code, userId, status });
       const room = await this.getRoom(code);
-      if (!room) return false;
-
-      const { error } = await supabase
-        .from('room_members')
-        .update({ status })
-        .eq('room_id', room.id)
-        .eq('user_id', userId);
-
-      if (error) {
-        console.error('Error updating member status:', error);
+      if (!room) {
+        console.error('[updateMemberStatus] Room not found:', code);
         return false;
       }
 
+      console.log('[updateMemberStatus] Updating member status in room:', room.id);
+      const { error, data } = await supabase
+        .from('room_members')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('room_id', room.id)
+        .eq('user_id', userId)
+        .select();
+
+      if (error) {
+        console.error('[updateMemberStatus] Error updating member status:', error);
+        console.error('[updateMemberStatus] Error details:', {
+          code: error.code,
+          message: error.message,
+          details: error.details,
+          hint: error.hint
+        });
+        return false;
+      }
+
+      console.log('[updateMemberStatus] Success! Updated rows:', data?.length || 0);
       return true;
     } catch (error) {
-      console.error('Error in updateMemberStatus:', error);
+      console.error('[updateMemberStatus] Exception:', error);
       return false;
     }
   }

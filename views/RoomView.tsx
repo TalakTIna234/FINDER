@@ -467,18 +467,41 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
   
   // Funzione per impostare "pronto"
   const setReady = async () => {
-    if (!roomCode || !currentUserId) return;
+    if (!roomCode) {
+      console.error('[RoomView] setReady: roomCode is missing');
+      alert('Errore: codice stanza non disponibile');
+      return;
+    }
+    
+    if (!currentUserId) {
+      console.error('[RoomView] setReady: currentUserId is missing');
+      alert('Errore: utente non identificato');
+      return;
+    }
+    
+    console.log('[RoomView] setReady called with:', { roomCode, currentUserId });
     
     try {
       const success = await roomService.updateMemberStatus(roomCode, currentUserId, 'ready');
       if (success) {
-        console.log('[RoomView] Member status set to ready');
+        console.log('[RoomView] Member status set to ready successfully');
         // La subscription aggiornerà automaticamente la stanza
+        // Forza un piccolo delay per assicurare propagazione
+        setTimeout(() => {
+          roomService.getRoom(roomCode).then(updatedRoom => {
+            if (updatedRoom) {
+              console.log('[RoomView] Manually reloaded room after setReady');
+              setRoom(updatedRoom);
+            }
+          });
+        }, 200);
       } else {
         console.error('[RoomView] Failed to set ready status');
+        alert('Errore nell\'impostazione dello status. Riprova.');
       }
     } catch (error) {
       console.error('[RoomView] Error setting ready:', error);
+      alert('Errore imprevisto. Controlla la console per dettagli.');
     }
   };
   

@@ -564,7 +564,7 @@ class RoomService {
       console.log('[updateMemberStatus] Updating member status in room:', room.id);
       const { error, data } = await supabase
         .from('room_members')
-        .update({ status, updated_at: new Date().toISOString() })
+        .update({ status })
         .eq('room_id', room.id)
         .eq('user_id', userId)
         .select();

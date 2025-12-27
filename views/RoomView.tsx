@@ -188,9 +188,39 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       };
       
       setupSubscription();
+      
+      // Polling di fallback per assicurare che l'host veda i nuovi membri
+      // (in caso la subscription non funzioni correttamente)
+      const pollInterval = setInterval(async () => {
+        try {
+          const currentRoom = await roomService.getRoom(roomCode);
+          if (currentRoom) {
+            setRoom(prevRoom => {
+              // Aggiorna solo se il numero di membri è cambiato o se ci sono differenze
+              if (!prevRoom || prevRoom.members.length !== currentRoom.members.length) {
+                console.log('[RoomView] Polling detected member change:', prevRoom?.members.length || 0, '->', currentRoom.members.length);
+                return currentRoom;
+              }
+              // Aggiorna anche se gli status sono cambiati
+              const statusChanged = prevRoom.members.some((prevMember, idx) => {
+                const currMember = currentRoom.members.find(m => m.id === prevMember.id);
+                return !currMember || currMember.status !== prevMember.status;
+              });
+              if (statusChanged) {
+                console.log('[RoomView] Polling detected status change');
+                return currentRoom;
+              }
+              return prevRoom;
+            });
+          }
+        } catch (error) {
+          console.error('[RoomView] Error in polling:', error);
+        }
+      }, 2000); // Poll ogni 2 secondi
 
       return () => {
         if (unsubscribe) unsubscribe();
+        clearInterval(pollInterval);
       };
     }
   }, [roomCode, step, onStartSession]);

@@ -119,14 +119,8 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
             setRoom(initialRoom);
             
             console.log('[RoomView] Setting up subscription for room:', roomCode);
-            // #region agent log
-            fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'RoomView.tsx:122',message:'subscription setup',data:{roomCode,initialMembersCount:initialRoom.members.length},timestamp:Date.now(),sessionId:'debug-multiplayer',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
-            // #endregion
             unsubscribe = roomService.subscribeToRoom(roomCode, (updatedRoom) => {
             if (updatedRoom) {
-              // #region agent log
-              fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'RoomView.tsx:125',message:'subscription callback received',data:{membersCount:updatedRoom.members.length,status:updatedRoom.status,memberIds:updatedRoom.members.map(m=>m.id)},timestamp:Date.now(),sessionId:'debug-multiplayer',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
-              // #endregion
               console.log('[RoomView] Room updated via subscription:', {
                 code: updatedRoom.code,
                 status: updatedRoom.status,
@@ -146,17 +140,11 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
               
               // Se lo status è cambiato a 'playing', avvia la sessione per tutti i membri
               if (updatedRoom.status === 'playing') {
-                // #region agent log
-                fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'RoomView.tsx:142',message:'subscription detected playing status',data:{membersCount:updatedRoom.members.length,moviesCount:updatedRoom.movies?.length||0,hasMovies:!!(updatedRoom.movies&&updatedRoom.movies.length>0)},timestamp:Date.now(),sessionId:'debug-start-session',runId:'run3',hypothesisId:'H2'})}).catch(()=>{});
-                // #endregion
                 console.log('[RoomView] Room status is playing - checking movies...');
                 if (updatedRoom.movies && updatedRoom.movies.length > 0) {
                   console.log('[RoomView] Starting session for all members with', updatedRoom.movies.length, 'movies');
                   // Piccolo delay per assicurarsi che lo stato sia aggiornato
                   setTimeout(() => {
-                    // #region agent log
-                    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'RoomView.tsx:148',message:'calling onStartSession',data:{moviesCount:updatedRoom.movies.length},timestamp:Date.now(),sessionId:'debug-start-session',runId:'run3',hypothesisId:'H2'})}).catch(()=>{});
-                    // #endregion
                     onStartSession(updatedRoom.movies);
                   }, 100);
                 } else {
@@ -216,9 +204,6 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
               // Aggiorna se lo status della stanza è cambiato a 'playing'
               if (prevRoom.status !== 'playing' && currentRoom.status === 'playing') {
                 console.log('[RoomView] Polling detected room status change to playing!');
-                // #region agent log
-                fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'RoomView.tsx:212',message:'polling detected playing status',data:{membersCount:currentRoom.members.length,moviesCount:currentRoom.movies?.length||0},timestamp:Date.now(),sessionId:'debug-start-session',runId:'run5',hypothesisId:'H2'})}).catch(()=>{});
-                // #endregion
                 // Avvia la sessione se lo status è playing e ci sono film
                 if (currentRoom.movies && currentRoom.movies.length > 0) {
                   console.log('[RoomView] Polling: Starting session with', currentRoom.movies.length, 'movies');
@@ -462,9 +447,6 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
   };
 
   const startSession = async () => {
-    // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'RoomView.tsx:451',message:'startSession entry',data:{roomCode,hasRoom:!!room,moviesCount:room?.movies.length||0},timestamp:Date.now(),sessionId:'debug-start-session',runId:'run3',hypothesisId:'H3'})}).catch(()=>{});
-    // #endregion
     if (!roomCode) return;
     
     try {
@@ -483,9 +465,6 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       
       console.log('[RoomView] Host starting session with', currentRoom.movies.length, 'movies...');
       const success = await roomService.startRoom(roomCode);
-      // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'RoomView.tsx:469',message:'startRoom result',data:{success},timestamp:Date.now(),sessionId:'debug-start-session',runId:'run3',hypothesisId:'H3'})}).catch(()=>{});
-      // #endregion
       
       if (success) {
         console.log('[RoomView] Room status updated to playing in database');
@@ -495,16 +474,10 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         
         // Ricarica la stanza per ottenere lo stato aggiornato
         const updatedRoom = await roomService.getRoom(roomCode);
-        // #region agent log
-        fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'RoomView.tsx:478',message:'room reloaded after startRoom',data:{roomFound:!!updatedRoom,status:updatedRoom?.status,moviesCount:updatedRoom?.movies.length||0},timestamp:Date.now(),sessionId:'debug-start-session',runId:'run3',hypothesisId:'H3'})}).catch(()=>{});
-        // #endregion
         if (updatedRoom && updatedRoom.status === 'playing' && updatedRoom.movies.length > 0) {
           console.log('[RoomView] Room confirmed as playing, starting session for host');
           // L'host entra immediatamente in sessione
           // Gli altri membri entreranno automaticamente tramite la subscription real-time
-          // #region agent log
-          fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'RoomView.tsx:483',message:'calling onStartSession for host',data:{moviesCount:updatedRoom.movies.length},timestamp:Date.now(),sessionId:'debug-start-session',runId:'run3',hypothesisId:'H3'})}).catch(()=>{});
-          // #endregion
           onStartSession(updatedRoom.movies);
         } else {
           console.error('[RoomView] Room not in playing state after update');
@@ -516,9 +489,6 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         alert('Errore nell\'avvio della sessione. Riprova.');
       }
     } catch (error) {
-      // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'RoomView.tsx:495',message:'startSession exception',data:{errorMessage:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-start-session',runId:'run3',hypothesisId:'H3'})}).catch(()=>{});
-      // #endregion
       console.error('Error starting session:', error);
       alert('Errore nell\'avvio della sessione. Riprova.');
     }
@@ -537,9 +507,6 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
   
   // Funzione per impostare "pronto"
   const setReady = async () => {
-    // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'RoomView.tsx:499',message:'setReady entry',data:{roomCode,currentUserId,hasRoomCode:!!roomCode,hasCurrentUserId:!!currentUserId},timestamp:Date.now(),sessionId:'debug-multiplayer',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
-    // #endregion
     if (!roomCode) {
       console.error('[RoomView] setReady: roomCode is missing');
       alert('Errore: codice stanza non disponibile');
@@ -556,9 +523,6 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
     
     try {
       const success = await roomService.updateMemberStatus(roomCode, currentUserId, 'ready');
-      // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'RoomView.tsx:515',message:'setReady updateMemberStatus result',data:{success},timestamp:Date.now(),sessionId:'debug-multiplayer',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
-      // #endregion
       if (success) {
         console.log('[RoomView] Member status set to ready successfully');
         // La subscription aggiornerà automaticamente la stanza
@@ -576,9 +540,6 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         alert('Errore nell\'impostazione dello status. Riprova.');
       }
     } catch (error) {
-      // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'RoomView.tsx:530',message:'setReady exception',data:{errorMessage:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-multiplayer',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
-      // #endregion
       console.error('[RoomView] Error setting ready:', error);
       alert('Errore imprevisto. Controlla la console per dettagli.');
     }

@@ -322,15 +322,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       let newRoom: Room | null = null;
       try {
         console.log('[3/4] Calling roomService.createRoom...');
-        const createRoomPromise = roomService.createRoom(user.id, user.nickname, movies);
-        
-        // Aggiungi timeout per la creazione stanza (20 secondi)
-        const roomTimeout = setTimeout(() => {
-          console.error('[3/4] Room creation timeout after 20 seconds');
-        }, 20000);
-        
-        newRoom = await createRoomPromise;
-        clearTimeout(roomTimeout);
+        newRoom = await roomService.createRoom(user.id, user.nickname, movies);
         
         console.log('[3/4] createRoom returned:', newRoom ? 'Room object' : 'null');
       } catch (roomError) {

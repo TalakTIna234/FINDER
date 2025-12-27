@@ -32,132 +32,38 @@ class RoomService {
       console.log('Parameters:', { hostId, hostNickname, moviesCount: movies.length });
       console.log('Timestamp:', new Date().toISOString());
       
-      // Verifica che le tabelle esistano prima di procedere - OTTIMIZZATO con timeout
-      console.log('Checking if rooms table exists...');
-      try {
-        const tableCheckPromise = supabase
-          .from('rooms')
-          .select('id')
-          .limit(1);
-        
-        // Timeout di 1 secondo per controllo tabella
-        const tableCheckTimeout = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Table check timeout')), 1000);
-        });
-        
-        const { error: testError } = await Promise.race([tableCheckPromise, tableCheckTimeout]) as any;
-        
-        if (testError) {
-          if (testError.code === '42P01' || testError.message?.includes('does not exist')) {
-            throw new Error('La tabella "rooms" non esiste. Esegui lo schema SQL in Supabase Dashboard → SQL Editor. Vedi il file supabase-rooms-schema.sql');
-          }
-          if (testError.message !== 'Table check timeout') {
-            console.warn('Warning checking rooms table:', testError);
-          }
-        } else {
-          console.log('✓ Rooms table exists');
-        }
-      } catch (tableCheckError: any) {
-        if (tableCheckError?.message === 'Table check timeout') {
-          console.warn('Table check timeout - assuming table exists and continuing...');
-        } else {
-          console.error('Table check failed:', tableCheckError);
-          throw tableCheckError;
-        }
-      }
+      // Rimosso controllo tabella per velocità - se la tabella non esiste, l'errore sarà chiaro nell'insert
       
-      // Genera codice univoco - OTTIMIZZATO
-      console.log('Generating unique room code...');
+      // Genera codice univoco - retry se duplicato
+      console.log('Generating room code...');
       let code = this.generateCode();
-      let attempts = 0;
-      const maxAttempts = 3; // Ridotto da 10 a 3 per velocità
+      let codeAttempts = 0;
+      const maxCodeAttempts = 5;
       
-      // Timeout totale per controllo codice (massimo 1.5 secondi)
-      const codeCheckStartTime = Date.now();
-      const maxCodeCheckTime = 1500;
-      
-      // Verifica che il codice sia unico (max 3 tentativi con timeout)
-      while (attempts < maxAttempts) {
-        // Controlla timeout totale
-        if (Date.now() - codeCheckStartTime > maxCodeCheckTime) {
-          console.warn('Code check timeout - using generated code (likely unique)');
-          break;
-        }
-        
-        try {
-          const checkPromise = supabase
-            .from('rooms')
-            .select('code')
-            .eq('code', code)
-            .maybeSingle();
-          
-          // Timeout di 500ms per ogni controllo
-          const checkTimeout = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('Code check timeout')), 500);
-          });
-          
-          const { data: existing, error: checkError } = await Promise.race([
-            checkPromise,
-            checkTimeout
-          ]) as any;
-          
-          if (checkError && checkError.message !== 'Code check timeout' && checkError.code !== 'PGRST116') {
-            console.error('Error checking code uniqueness:', checkError);
-            // Continua comunque - probabilmente il codice è unico
-            break;
-          }
-          
-          if (!existing) {
-            console.log(`✓ Code ${code} is available (attempt ${attempts + 1})`);
-            break; // Codice disponibile
-          }
-          
-          console.log(`✗ Code ${code} already exists, generating new one...`);
-          code = this.generateCode();
-          attempts++;
-        } catch (error: any) {
-          if (error?.message === 'Code check timeout') {
-            console.warn('Code check timeout - using code anyway (likely unique)');
-            break; // Usa il codice generato
-          }
-          console.error('Error in code check loop:', error);
-          // Continua comunque
-          break;
-        }
-      }
-
-      console.log('✓ Generated unique code:', code);
-
       // Crea stanza nel database
       console.log('Inserting room into database...');
-      console.log('Room data to insert:', {
-        code,
-        host_id: hostId,
-        host_nickname: hostNickname,
-        movies_count: movies.length,
-        status: 'lobby'
-      });
-      
       const insertStartTime = Date.now();
       let roomData: any = null;
       
-      try {
-        const { data, error: roomError } = await supabase
-          .from('rooms')
-          .insert({
-            code,
-            host_id: hostId,
-            host_nickname: hostNickname,
-            movies: movies as any,
-            status: 'lobby'
-          })
-          .select()
-          .single();
-        
-        const insertTime = Date.now() - insertStartTime;
-        console.log(`Room insert completed in ${insertTime}ms`);
+      while (codeAttempts < maxCodeAttempts) {
+        try {
+          console.log(`Room insert attempt ${codeAttempts + 1} with code: ${code}`);
+          const { data, error: roomError } = await supabase
+            .from('rooms')
+            .insert({
+              code,
+              host_id: hostId,
+              host_nickname: hostNickname,
+              movies: movies as any,
+              status: 'lobby'
+            })
+            .select()
+            .single();
+          
+          const insertTime = Date.now() - insertStartTime;
+          console.log(`Room insert completed in ${insertTime}ms`);
 
-        if (roomError) {
+          if (roomError) {
           console.error('=== ROOM INSERT ERROR ===');
           console.error('Error code:', roomError.code);
           console.error('Error message:', roomError.message);
@@ -184,31 +90,31 @@ class RoomService {
         roomData = data;
         console.log('✓ Room created in database:', roomData.id);
         
-      } catch (insertError: any) {
-        const insertTime = Date.now() - insertStartTime;
-        console.error(`Room insert failed after ${insertTime}ms`);
-        console.error('=== ROOM INSERT ERROR ===');
-        console.error('Error:', insertError);
-        
-        // Se è un errore di rete
-        if (insertError?.message?.includes('Failed to fetch') || 
-            insertError?.message?.includes('NetworkError') ||
-            insertError?.message?.includes('Network request failed') ||
-            insertError?.name === 'TypeError' ||
-            (insertError?.message && typeof insertError.message === 'string' && insertError.message.includes('fetch'))) {
-          throw new Error('Errore di connessione a Supabase. Verifica la connessione internet e riprova.');
+          const insertTime = Date.now() - insertStartTime;
+          console.error(`Room insert failed after ${insertTime}ms`);
+          console.error('=== ROOM INSERT ERROR ===');
+          console.error('Error:', insertError);
+          
+          // Se è un errore di rete
+          if (insertError?.message?.includes('Failed to fetch') || 
+              insertError?.message?.includes('NetworkError') ||
+              insertError?.message?.includes('Network request failed') ||
+              insertError?.name === 'TypeError' ||
+              (insertError?.message && typeof insertError.message === 'string' && insertError.message.includes('fetch'))) {
+            throw new Error('Errore di connessione a Supabase. Verifica la connessione internet e riprova.');
+          }
+          
+          // Rilancia altri errori (già gestiti sopra)
+          throw insertError;
         }
-        
-        // Rilancia altri errori (già gestiti sopra)
-        throw insertError;
       }
 
-      // Aggiungi host come membro - con timeout
+      // Aggiungi host come membro
       console.log('Adding host as member...');
       const memberStartTime = Date.now();
       
       try {
-        const memberPromise = supabase
+        const { error: memberError } = await supabase
           .from('room_members')
           .insert({
             room_id: roomData.id,
@@ -218,17 +124,10 @@ class RoomService {
             status: 'lobby'
           });
         
-        // Timeout di 2 secondi per inserimento membro
-        const memberTimeout = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Member insert timeout')), 2000);
-        });
-        
-        const { error: memberError } = await Promise.race([memberPromise, memberTimeout]) as any;
-        
         const memberTime = Date.now() - memberStartTime;
         console.log(`Member insert completed in ${memberTime}ms`);
         
-        if (memberError && memberError.message !== 'Member insert timeout') {
+        if (memberError) {
           console.error('=== MEMBER INSERT ERROR ===');
           console.error('Error code:', memberError.code);
           console.error('Error message:', memberError.message);

@@ -556,16 +556,20 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       const success = await roomService.updateMemberStatus(roomCode, currentUserId, 'ready');
       if (success) {
         console.log('[RoomView] Member status set to ready successfully');
-        // La subscription aggiornerà automaticamente la stanza
-        // Forza un piccolo delay per assicurare propagazione
-        setTimeout(() => {
-          roomService.getRoom(roomCode).then(updatedRoom => {
-            if (updatedRoom) {
-              console.log('[RoomView] Manually reloaded room after setReady');
-              setRoom(updatedRoom);
-            }
+        // Ricarica immediatamente la stanza per assicurare che lo stato sia aggiornato
+        const updatedRoom = await roomService.getRoom(roomCode);
+        if (updatedRoom) {
+          console.log('[RoomView] Reloaded room after setReady:', {
+            members: updatedRoom.members.map(m => ({
+              id: m.id,
+              nickname: m.nickname,
+              status: m.status,
+              isCurrentUser: m.id === currentUserId
+            }))
           });
-        }, 200);
+          setRoom(updatedRoom);
+        }
+        // La subscription aggiornerà anche automaticamente la stanza
       } else {
         console.error('[RoomView] Failed to set ready status');
         showToast('Errore nell\'impostazione dello status. Riprova.', 'error');

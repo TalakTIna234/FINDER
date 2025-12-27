@@ -230,14 +230,14 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
     setLoading(true);
     let timeoutCleared = false;
     
-    // Timeout di sicurezza - 8 secondi per dare tempo alle chiamate
+    // Timeout di sicurezza - 15 secondi per dare tempo alle chiamate (aumentato da 8 a 15)
     const timeoutId = setTimeout(() => {
       if (!timeoutCleared) {
-        console.error('Timeout: handleSelectGenre took more than 8 seconds');
+        console.error('Timeout: handleSelectGenre took more than 15 seconds');
         showToast('Il caricamento sta impiegando troppo tempo. Verifica la connessione internet e riprova.', 'warning');
         setLoading(false);
       }
-    }, 8000);
+    }, 15000);
     
     try {
       console.log('=== STARTING GENRE SELECTION ===');

@@ -27,6 +27,7 @@ class RoomService {
   }
 
   async createRoom(hostId: string, hostNickname: string, movies: Movie[]): Promise<Room | null> {
+    const createRoomStartTime = Date.now();
     try {
       console.log('=== CREATE ROOM START ===');
       console.log('Parameters:', { hostId, hostNickname, moviesCount: movies.length });

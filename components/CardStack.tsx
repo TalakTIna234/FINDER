@@ -306,12 +306,20 @@ export const CardStack: React.FC<CardStackProps> = ({
     
     // Pulisci il timeout precedente se esiste
     if (matchTimeoutRef.current) {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:306',message:'Clearing previous match timeout',data:{currentIndex,movieId:movie.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+      // #endregion
       clearTimeout(matchTimeoutRef.current);
+      matchTimeoutRef.current = null;
     }
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:312',message:'Setting match timeout',data:{currentIndex,movieId:movie.id,isMatch,delay},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+    // #endregion
     
     matchTimeoutRef.current = setTimeout(() => {
       // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:308',message:'Moving to next movie (timeout executed)',data:{currentIndex,movieId:movie.id,isMatch,delay},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:318',message:'Moving to next movie (timeout executed)',data:{currentIndex,movieId:movie.id,isMatch,delay},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
       // #endregion
       setIsInstantMatch(false);
       matchTimeoutRef.current = null;

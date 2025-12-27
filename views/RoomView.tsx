@@ -10,6 +10,7 @@ import { roomService, Room } from '../services/roomService';
 import { authService } from '../services/authService';
 import { statsService } from '../services/statsService';
 import { useState as useRoomState, useEffect as useRoomEffect } from 'react';
+import { useToast } from '../components/Toast';
 
 // Funzione per generare UUID v4 valido
 function generateUUID(): string {
@@ -36,6 +37,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
   const [loading, setLoading] = useState(false);
   const [room, setRoom] = useState<Room | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const { showToast, ToastContainer } = useToast();
   
   // Stati per modalità manuale
   const [manualMovies, setManualMovies] = useState<Movie[]>([]);
@@ -149,31 +151,11 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                   }, 100);
                 } else {
                   console.error('[RoomView] Room status is playing but no movies available');
-                  alert('Errore: la stanza non ha film. Contatta l\'host.');
+                  showToast('Errore: la stanza non ha film. Contatta l\'host.', 'error');
                 }
               } else if (updatedRoom.status === 'lobby') {
-                // Se siamo in lobby, verifica se tutti sono pronti per auto-start
-                const allReady = updatedRoom.members.every(m => m.status === 'ready');
-                if (allReady && updatedRoom.members.length > 1) {
-                  console.log('[RoomView] All members ready, auto-starting in 1 second...');
-                  setTimeout(async () => {
-                    // Solo l'host può avviare, quindi se siamo host avviamo
-                    const isHost = updatedRoom.hostId === currentUserId || 
-                                   updatedRoom.members.some(m => m.id === currentUserId && m.isHost === true);
-                    if (isHost) {
-                      const room = await roomService.getRoom(roomCode);
-                      if (room && room.status === 'lobby' && room.movies.length > 0) {
-                        console.log('[RoomView] Auto-starting match (all ready)');
-                        const success = await roomService.startRoom(roomCode);
-                        if (success) {
-                          setTimeout(() => {
-                            onStartSession(room.movies, roomCode, room.id, room.members.length);
-                          }, 300);
-                        }
-                      }
-                    }
-                  }, 1000);
-                }
+                // Rimuoviamo l'auto-start - l'host deve premere manualmente "Inizia Match"
+                // Questo permette all'host di vedere quando tutti sono pronti prima di iniziare
               }
             } else {
               console.warn('[RoomView] Subscription callback received null room');
@@ -251,7 +233,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
     const timeoutId = setTimeout(() => {
       if (!timeoutCleared) {
         console.error('Timeout: handleSelectGenre took more than 8 seconds');
-        alert('Il caricamento sta impiegando troppo tempo. Verifica la connessione internet e riprova.');
+        showToast('Il caricamento sta impiegando troppo tempo. Verifica la connessione internet e riprova.', 'warning');
         setLoading(false);
       }
     }, 8000);
@@ -269,7 +251,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       if (movies.length === 0) {
         clearTimeout(timeoutId);
         console.error('[1/4] No default movies available for genre:', genreId);
-        alert('Nessun film di default disponibile per questo genere. Riprova.');
+        showToast('Nessun film di default disponibile per questo genere. Riprova.', 'error');
         setLoading(false);
         return;
       }
@@ -348,7 +330,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         userMessage += `3. Hai eseguito supabase-rooms-guest-support.sql per supporto guest\n`;
         userMessage += `4. Controlla la console per dettagli completi`;
         
-        alert(userMessage);
+        showToast(userMessage, 'error');
         setLoading(false);
         return;
       }
@@ -359,7 +341,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       if (!newRoom) {
         clearTimeout(timeoutId);
         console.error('createRoom returned null');
-        alert('Errore nella creazione della stanza. La funzione ha restituito null. Verifica che le tabelle rooms e room_members siano state create in Supabase. Controlla la console per dettagli.');
+        showToast('Errore nella creazione della stanza. Verifica la connessione e riprova.', 'error');
         setLoading(false);
         return;
       }
@@ -441,7 +423,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       });
       
       const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';
-      alert(`Errore nel caricamento dei film: ${errorMessage}\n\nControlla la console per dettagli. Verifica che le tabelle rooms e room_members siano state create in Supabase.`);
+      showToast(`Errore nel caricamento dei film: ${errorMessage}`, 'error');
       setLoading(false);
     }
   };
@@ -453,7 +435,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       const currentRoom = await roomService.getRoom(roomCode);
       if (!currentRoom) {
         console.error('Room not found');
-        alert('Stanza non trovata. Riprova.');
+        showToast('Stanza non trovata. Riprova.', 'error');
         return;
       }
       
@@ -461,18 +443,18 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       const allMembersReady = currentRoom.members.every(m => m.status === 'ready');
       if (!allMembersReady) {
         const notReadyCount = currentRoom.members.filter(m => m.status !== 'ready').length;
-        alert(`Attendi che tutti i player siano pronti! (${notReadyCount} player non ancora pronti)`);
+        showToast(`${notReadyCount} player non ancora pronti. Attendi che tutti siano pronti!`, 'warning');
         return;
       }
       
       if (currentRoom.members.length < 1) {
-        alert('Devi avere almeno un altro player nella stanza per iniziare!');
+        showToast('Devi avere almeno un altro player nella stanza per iniziare!', 'warning');
         return;
       }
       
       if (!currentRoom.movies || currentRoom.movies.length === 0) {
         console.error('Room has no movies');
-        alert('La stanza non ha film. Attendi che vengano caricati.');
+        showToast('La stanza non ha film. Attendi che vengano caricati.', 'warning');
         return;
       }
       
@@ -504,15 +486,15 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
           onStartSession(currentRoom.movies, roomCode, currentRoom.id, currentRoom.members.length);
         } else {
           console.error('[RoomView] No movies available in room!');
-          alert('Errore: la stanza non ha film disponibili. Riprova.');
+          showToast('Errore: la stanza non ha film disponibili. Riprova.', 'error');
         }
       } else {
         console.error('Failed to start room');
-        alert('Errore nell\'avvio della sessione. Riprova.');
+        showToast('Errore nell\'avvio della sessione. Riprova.', 'error');
       }
     } catch (error) {
       console.error('Error starting session:', error);
-      alert('Errore nell\'avvio della sessione. Riprova.');
+      showToast('Errore nell\'avvio della sessione. Riprova.', 'error');
     }
   };
   
@@ -531,13 +513,13 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
   const setReady = async () => {
     if (!roomCode) {
       console.error('[RoomView] setReady: roomCode is missing');
-      alert('Errore: codice stanza non disponibile');
+      showToast('Errore: codice stanza non disponibile', 'error');
       return;
     }
-    
+
     if (!currentUserId) {
       console.error('[RoomView] setReady: currentUserId is missing');
-      alert('Errore: utente non identificato');
+      showToast('Errore: utente non identificato', 'error');
       return;
     }
     
@@ -559,11 +541,11 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         }, 200);
       } else {
         console.error('[RoomView] Failed to set ready status');
-        alert('Errore nell\'impostazione dello status. Riprova.');
+        showToast('Errore nell\'impostazione dello status. Riprova.', 'error');
       }
     } catch (error) {
       console.error('[RoomView] Error setting ready:', error);
-      alert('Errore imprevisto. Controlla la console per dettagli.');
+      showToast('Errore imprevisto. Riprova.', 'error');
     }
   };
   
@@ -580,11 +562,11 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         // La subscription aggiornerà automaticamente la stanza
       } else {
         console.error('[RoomView] Failed to cancel session');
-        alert('Errore nell\'annullamento della sessione');
+        showToast('Errore nell\'annullamento della sessione', 'error');
       }
     } catch (error) {
       console.error('[RoomView] Error cancelling session:', error);
-      alert('Errore nell\'annullamento della sessione');
+      showToast('Errore nell\'annullamento della sessione', 'error');
     }
   };
   
@@ -646,7 +628,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
 
   const addMovieToManualList = (movie: Movie) => {
     if (manualMovies.find(m => m.id === movie.id)) {
-      alert('Film già aggiunto');
+      showToast('Film già aggiunto', 'info');
       return;
     }
     setManualMovies([...manualMovies, movie]);
@@ -660,7 +642,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
 
   const handleCreateManualRoom = async () => {
     if (manualMovies.length === 0) {
-      alert('Aggiungi almeno un film prima di creare la stanza');
+      showToast('Aggiungi almeno un film prima di creare la stanza', 'warning');
       return;
     }
     
@@ -671,7 +653,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
     const timeoutId = setTimeout(() => {
       if (!timeoutCleared) {
         console.error('Timeout: handleCreateManualRoom took more than 5 seconds');
-        alert('La creazione della stanza sta impiegando troppo tempo. Verifica la connessione internet e riprova.');
+        showToast('La creazione della stanza sta impiegando troppo tempo. Verifica la connessione internet e riprova.', 'warning');
         setLoading(false);
       }
     }, 5000);
@@ -755,7 +737,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       if (!newRoom) {
         timeoutCleared = true;
         clearTimeout(timeoutId);
-        alert('Errore nella creazione della stanza');
+        showToast('Errore nella creazione della stanza', 'error');
         setLoading(false);
         return;
       }
@@ -794,7 +776,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         return;
       }
       
-      alert('Errore nella creazione della stanza: ' + (error instanceof Error ? error.message : 'Errore sconosciuto'));
+      showToast('Errore nella creazione della stanza: ' + (error instanceof Error ? error.message : 'Errore sconosciuto'), 'error');
       setLoading(false);
     }
     
@@ -930,7 +912,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
           <HapticButton
             onClick={async () => {
               if (roomCode.length !== 6) {
-                alert('Il codice deve essere di 6 caratteri');
+                showToast('Il codice deve essere di 6 caratteri', 'warning');
                 return;
               }
               
@@ -980,7 +962,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                 const foundRoom = await roomService.getRoom(roomCode);
                 if (!foundRoom) {
                   console.error('Room not found:', roomCode);
-                  alert('Stanza non trovata. Controlla il codice e assicurati che la stanza sia stata creata.');
+                  showToast('Stanza non trovata. Controlla il codice e assicurati che la stanza sia stata creata.', 'error');
                   setLoading(false);
                   return;
                 }
@@ -991,7 +973,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                 const joinedRoom = await roomService.joinRoom(roomCode, user.id, user.nickname);
                 if (!joinedRoom) {
                   console.error('Failed to join room');
-                  alert('Errore nell\'entrare nella stanza. Controlla la console per dettagli.');
+                  showToast('Errore nell\'entrare nella stanza. Riprova.', 'error');
                   setLoading(false);
                   return;
                 }
@@ -1022,7 +1004,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                   message: error instanceof Error ? error.message : 'Unknown error',
                   stack: error instanceof Error ? error.stack : undefined
                 });
-                alert('Errore nell\'entrare nella stanza: ' + (error instanceof Error ? error.message : 'Errore sconosciuto') + '. Controlla la console per dettagli.');
+                showToast('Errore nell\'entrare nella stanza: ' + (error instanceof Error ? error.message : 'Errore sconosciuto'), 'error');
                 setLoading(false);
               }
             }}
@@ -1231,7 +1213,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                     // Fallback: copia solo il codice
                     try {
                       await navigator.clipboard.writeText(roomCode);
-                      alert('Codice copiato!');
+                      showToast('Codice copiato!', 'success');
                     } catch (copyErr) {
                       console.error('Error copying:', copyErr);
                     }
@@ -1273,7 +1255,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                   try {
                     // Copia solo il codice
                     await navigator.clipboard.writeText(roomCode);
-                    alert('Codice copiato!');
+                    showToast('Codice copiato!', 'success');
                   } catch (err) {
                     console.error('Error copying:', err);
                   }
@@ -1402,6 +1384,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
           </div>
         </div>
       )}
+      <ToastContainer />
     </div>
   );
 };

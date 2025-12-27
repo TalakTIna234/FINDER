@@ -662,12 +662,21 @@ class RoomService {
             { 
               event: '*', 
               schema: 'public', 
-              table: 'rooms',
-              filter: `code=eq.${code}`
+              table: 'rooms'
+              // RIMOSSO filter - riceviamo TUTTI gli eventi e filtriamo nel codice
             },
             (payload) => {
+              // Filtra nel codice per questo code specifico
+              const changedCode = payload.new?.code || payload.old?.code;
+              if (changedCode !== code) {
+                // #region agent log
+                fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'roomService.ts:665',message:'subscription room change filtered out',data:{eventType:payload.eventType,changedCode,ourCode:code,matches:false},timestamp:Date.now(),sessionId:'debug-start-session',runId:'run3',hypothesisId:'H1'})}).catch(()=>{});
+                // #endregion
+                return; // Ignora eventi per altre stanze
+              }
+              
               // #region agent log
-              fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'roomService.ts:658',message:'subscription room changed event',data:{eventType:payload.eventType,newStatus:payload.new?.status,oldStatus:payload.old?.status},timestamp:Date.now(),sessionId:'debug-start-session',runId:'run3',hypothesisId:'H1'})}).catch(()=>{});
+              fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'roomService.ts:673',message:'subscription room changed event',data:{eventType:payload.eventType,newStatus:payload.new?.status,oldStatus:payload.old?.status,changedCode},timestamp:Date.now(),sessionId:'debug-start-session',runId:'run3',hypothesisId:'H1'})}).catch(()=>{});
               // #endregion
               console.log(`[RoomService] Room ${code} changed:`, payload.eventType, payload);
               // Ricarica stanza quando cambia

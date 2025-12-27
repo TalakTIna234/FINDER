@@ -286,6 +286,7 @@ export const CardStack: React.FC<CardStackProps> = ({
   }, [allVoted, currentMovieVotes, isMultiplayer, roomId, currentIndex, round, currentRoundMovies, totalMembers]);
 
   const moveToNextMovie = async () => {
+    setIsInstantMatch(false); // Resetta sempre l'animazione match
     if (currentIndex < currentRoundMovies.length - 1) {
       setCurrentIndex(prev => prev + 1);
       setUserVoted(false);
@@ -529,7 +530,7 @@ export const CardStack: React.FC<CardStackProps> = ({
         <HapticButton 
           impact="heavy"
           onClick={() => handleSwipe('right')}
-          disabled={isPaused || (isMultiplayer && (userVoted || !allVoted))}
+          disabled={isPaused || (isMultiplayer && userVoted)}
           className="w-16 h-16 rounded-full bg-green-500 dark:bg-green-600 flex items-center justify-center text-white shadow-xl active:bg-green-400 dark:active:bg-green-500 transition-colors duration-500 disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <Heart size={32} fill="currentColor" strokeWidth={0} />

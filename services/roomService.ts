@@ -656,9 +656,15 @@ class RoomService {
               filter: `code=eq.${code}`
             },
             (payload) => {
-              console.log(`[RoomService] Room ${code} changed:`, payload.eventType);
+              // #region agent log
+              fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'roomService.ts:658',message:'subscription room changed event',data:{eventType:payload.eventType,newStatus:payload.new?.status,oldStatus:payload.old?.status},timestamp:Date.now(),sessionId:'debug-start-session',runId:'run3',hypothesisId:'H1'})}).catch(()=>{});
+              // #endregion
+              console.log(`[RoomService] Room ${code} changed:`, payload.eventType, payload);
               // Ricarica stanza quando cambia
               this.getRoom(code).then(updatedRoom => {
+                // #region agent log
+                fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'roomService.ts:662',message:'subscription room reloaded',data:{roomFound:!!updatedRoom,status:updatedRoom?.status,membersCount:updatedRoom?.members.length||0},timestamp:Date.now(),sessionId:'debug-start-session',runId:'run3',hypothesisId:'H1'})}).catch(()=>{});
+                // #endregion
                 if (updatedRoom) {
                   console.log(`[RoomService] Room ${code} reloaded, members:`, updatedRoom.members.length, updatedRoom.members.map(m => ({ id: m.id, nickname: m.nickname, status: m.status })));
                   callback(updatedRoom);

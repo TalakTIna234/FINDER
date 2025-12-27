@@ -588,7 +588,7 @@ const App: React.FC = () => {
         setCurrentRoomId(null);
         setCurrentRoomMembers(1);
       }} 
-      onStartSession={(movies, roomCode, roomId, membersCount) => { 
+      onStartSession={async (movies, roomCode, roomId, membersCount) => { 
         console.log('[App] onStartSession called:', {
           moviesCount: movies?.length || 0,
           roomCode,
@@ -600,6 +600,30 @@ const App: React.FC = () => {
           console.error('[App] No movies provided to onStartSession!');
           alert('Errore: nessun film disponibile. Riprova.');
           return;
+        }
+        
+        // Assicurati che currentUserId sia impostato anche per guest
+        if (!currentUserId) {
+          const user = await authService.getCurrentUser();
+          if (user) {
+            setCurrentUserId(user.id);
+          } else {
+            // Recupera o genera guest ID
+            let guestId = localStorage.getItem('mm_guest_id');
+            if (!guestId) {
+              if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+                guestId = crypto.randomUUID();
+              } else {
+                guestId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                  const r = Math.random() * 16 | 0;
+                  const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                  return v.toString(16);
+                });
+              }
+              localStorage.setItem('mm_guest_id', guestId);
+            }
+            setCurrentUserId(guestId);
+          }
         }
         
         setCurrentMovies(movies); 

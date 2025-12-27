@@ -480,6 +480,7 @@ export const CardStack: React.FC<CardStackProps> = ({
               isPaused={isPaused}
               isMultiplayer={isMultiplayer}
               userVoted={userVoted}
+              allVoted={isMultiplayer ? allVoted : true}
             />
           ))}
         </AnimatePresence>

@@ -340,24 +340,23 @@ export const CardStack: React.FC<CardStackProps> = ({
     // In multiplayer, salva il voto e non permettere lo swipe finché tutti non hanno votato
     if (isMultiplayer && roomId && userId) {
       if (userVoted) {
-        // L'utente ha già votato, non permettere di cambiare voto
-        return;
-      }
-      
-      // Non permettere di votare se non tutti hanno ancora votato (blocca finché tutti non votano)
-      // Ma permette il primo voto (quando currentMovieVotes.length === 0)
-      if (currentMovieVotes.length > 0 && !allVoted) {
-        // Ci sono già voti ma non tutti hanno votato, blocca
+        // L'utente ha già votato per questo film, non permettere di cambiare voto
         return;
       }
 
+      // Tutti gli utenti possono votare liberamente - non bloccare se ci sono già altri voti
+      // Il passaggio al prossimo film è gestito dal useEffect che aspetta allVoted
       const vote: 'like' | 'dislike' = (direction === 'right' || direction === 'up') ? 'like' : 'dislike';
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:348',message:'handleSwipe - submitting vote',data:{vote,movieId:movie.id,userId,roomId,round,userVoted,allVoted,currentVotesCount:currentMovieVotes.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
+      // #endregion
       
       // Salva il voto
       const success = await roomService.submitVote(roomId, userId, movie.id, vote, round);
       if (success) {
         setUserVoted(true);
-        // I voti verranno ricaricati dal polling
+        // I voti verranno ricaricati dal polling per aggiornare allVoted
       }
       return;
     }

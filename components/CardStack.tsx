@@ -44,7 +44,7 @@ const MovieCard: React.FC<CardProps> = ({ movie, onSwipe, isFront, onShowDetails
   return (
     <motion.div
       style={{ x, y, rotate, opacity, zIndex: isFront ? 10 : 0 }}
-      drag={isFront && !isPaused && (!isMultiplayer || (isMultiplayer && !userVoted && allVoted))}
+      drag={isFront && !isPaused && (!isMultiplayer || (isMultiplayer && !userVoted))}
       dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
       onDragEnd={(_, info) => {
         if (info.offset.x > 120) onSwipe('right');

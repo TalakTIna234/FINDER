@@ -447,6 +447,48 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
     room.members.some(m => m.id === currentUserId && m.isHost === true)
   );
   
+  // Trova il membro corrente
+  const currentMember = room?.members.find(m => m.id === currentUserId);
+  const isCurrentMemberReady = currentMember?.status === 'ready';
+  
+  // Funzione per impostare "pronto"
+  const setReady = async () => {
+    if (!roomCode || !currentUserId) return;
+    
+    try {
+      const success = await roomService.updateMemberStatus(roomCode, currentUserId, 'ready');
+      if (success) {
+        console.log('[RoomView] Member status set to ready');
+        // La subscription aggiornerà automaticamente la stanza
+      } else {
+        console.error('[RoomView] Failed to set ready status');
+      }
+    } catch (error) {
+      console.error('[RoomView] Error setting ready:', error);
+    }
+  };
+  
+  // Funzione per annullare la sessione (solo host)
+  const cancelSession = async () => {
+    if (!roomCode || !isHost) return;
+    
+    if (!confirm('Vuoi annullare la sessione?')) return;
+    
+    try {
+      const success = await roomService.cancelRoom(roomCode);
+      if (success) {
+        console.log('[RoomView] Session cancelled');
+        // La subscription aggiornerà automaticamente la stanza
+      } else {
+        console.error('[RoomView] Failed to cancel session');
+        alert('Errore nell\'annullamento della sessione');
+      }
+    } catch (error) {
+      console.error('[RoomView] Error cancelling session:', error);
+      alert('Errore nell\'annullamento della sessione');
+    }
+  };
+  
   // Debug logging per isHost
   useEffect(() => {
     if (room && currentUserId) {
@@ -461,7 +503,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         isHostByMember: isHostByMember,
         isHost: calculatedIsHost,
         hostMember: hostMember ? { id: hostMember.id, nickname: hostMember.nickname } : null,
-        allMembers: room.members.map(m => ({ id: m.id, nickname: m.nickname, isHost: m.isHost }))
+        allMembers: room.members.map(m => ({ id: m.id, nickname: m.nickname, isHost: m.isHost, status: m.status }))
       });
     }
   }, [room, currentUserId]);
@@ -1150,19 +1192,29 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
              </h3>
              {room?.members.map((member) => {
                const isCurrentUser = currentUserId && member.id === currentUserId;
+               const isReady = member.status === 'ready';
                return (
-                 <div key={member.id} className="bg-white/5 p-4 rounded-[24px] flex items-center gap-3 border border-white/5">
-                   <div className={`w-12 h-12 bg-gradient-to-br ${member.isHost ? 'from-red-600 to-purple-600' : 'from-blue-600 to-indigo-600'} rounded-full flex items-center justify-center font-black shadow-xl text-sm`}>
+                 <div key={member.id} className="bg-white/5 p-4 rounded-[24px] flex items-center gap-3 border border-white/5 relative overflow-hidden">
+                   {/* Effetto glow se pronto */}
+                   {isReady && (
+                     <div className="absolute inset-0 bg-green-500/10 blur-xl pointer-events-none" />
+                   )}
+                   <div className={`w-12 h-12 bg-gradient-to-br ${member.isHost ? 'from-red-600 to-purple-600' : 'from-blue-600 to-indigo-600'} rounded-full flex items-center justify-center font-black shadow-xl text-sm relative z-10 ${isReady ? 'ring-2 ring-green-500/50' : ''}`}>
                      {member.nickname.charAt(0).toUpperCase()}
                    </div>
-                   <div className="flex-1 min-w-0">
+                   <div className="flex-1 min-w-0 relative z-10">
                      <span className="font-black italic uppercase text-xs truncate block">
                        {member.nickname} {member.isHost ? '(Host)' : ''}
                      </span>
-                     <p className={`text-[9px] font-black uppercase tracking-widest mt-0.5 ${member.status === 'ready' ? 'text-green-500' : 'text-blue-500'}`}>
-                       {member.status === 'ready' ? 'Pronto' : 'In gioco'}
+                     <p className={`text-[9px] font-black uppercase tracking-widest mt-0.5 ${isReady ? 'text-green-400' : 'text-white/40 dark:text-black/40'}`}>
+                       {isReady ? '✓ Pronto' : 'In attesa...'}
                      </p>
                    </div>
+                   {isReady && (
+                     <div className="relative z-10">
+                       <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                     </div>
+                   )}
                  </div>
                );
              })}

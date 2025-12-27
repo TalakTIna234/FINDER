@@ -18,9 +18,11 @@ interface CardProps {
   onShowDetails: () => void;
   onRequestTrailer?: (movie: Movie, trailerKey: string) => void;
   isPaused?: boolean;
+  isMultiplayer?: boolean;
+  userVoted?: boolean;
 }
 
-const MovieCard: React.FC<CardProps> = ({ movie, onSwipe, isFront, onShowDetails, onRequestTrailer, isPaused = false }) => {
+const MovieCard: React.FC<CardProps> = ({ movie, onSwipe, isFront, onShowDetails, onRequestTrailer, isPaused = false, isMultiplayer = false, userVoted = false }) => {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-25, 25]);

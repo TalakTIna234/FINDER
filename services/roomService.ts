@@ -64,32 +64,46 @@ class RoomService {
           console.log(`Room insert completed in ${insertTime}ms`);
 
           if (roomError) {
-          console.error('=== ROOM INSERT ERROR ===');
-          console.error('Error code:', roomError.code);
-          console.error('Error message:', roomError.message);
-          console.error('Error details:', roomError.details);
-          console.error('Error hint:', roomError.hint);
-          
-          // Se la tabella non esiste, fornisci un messaggio più chiaro
-          if (roomError.code === '42P01' || roomError.message?.includes('does not exist')) {
-            throw new Error('La tabella "rooms" non esiste. Esegui lo schema SQL in Supabase Dashboard → SQL Editor. Vedi il file supabase-rooms-schema.sql');
+            console.error('=== ROOM INSERT ERROR ===');
+            console.error('Error code:', roomError.code);
+            console.error('Error message:', roomError.message);
+            console.error('Error details:', roomError.details);
+            console.error('Error hint:', roomError.hint);
+            
+            // Se il codice è duplicato, genera un nuovo codice e riprova
+            if (roomError.code === '23505' && roomError.message?.includes('code')) {
+              codeAttempts++;
+              if (codeAttempts < maxCodeAttempts) {
+                console.log(`Code ${code} already exists, generating new code...`);
+                code = this.generateCode();
+                continue; // Riprova con nuovo codice
+              } else {
+                throw new Error('Impossibile generare un codice stanza univoco dopo diversi tentativi. Riprova.');
+              }
+            }
+            
+            // Se la tabella non esiste, fornisci un messaggio più chiaro
+            if (roomError.code === '42P01' || roomError.message?.includes('does not exist')) {
+              throw new Error('La tabella "rooms" non esiste. Esegui lo schema SQL in Supabase Dashboard → SQL Editor. Vedi il file supabase-rooms-schema.sql');
+            }
+            
+            // Se è un errore di RLS policy
+            if (roomError.code === '42501' || roomError.message?.includes('permission denied') || roomError.message?.includes('policy')) {
+              throw new Error('Errore di permessi: verifica che le RLS policies per la tabella "rooms" siano configurate correttamente. Vedi supabase-rooms-schema.sql');
+            }
+            
+            throw new Error(`Errore nella creazione della stanza: ${roomError.message} (codice: ${roomError.code})`);
           }
-          
-          // Se è un errore di RLS policy
-          if (roomError.code === '42501' || roomError.message?.includes('permission denied') || roomError.message?.includes('policy')) {
-            throw new Error('Errore di permessi: verifica che le RLS policies per la tabella "rooms" siano configurate correttamente. Vedi supabase-rooms-schema.sql');
+
+          if (!data) {
+            throw new Error('La stanza è stata creata ma non è stato possibile recuperare i dati. Riprova.');
           }
+
+          roomData = data;
+          console.log('✓ Room created in database:', roomData.id);
+          break; // Esci dal loop se l'insert è riuscito
           
-          throw new Error(`Errore nella creazione della stanza: ${roomError.message} (codice: ${roomError.code})`);
-        }
-
-        if (!data) {
-          throw new Error('La stanza è stata creata ma non è stato possibile recuperare i dati. Riprova.');
-        }
-
-        roomData = data;
-        console.log('✓ Room created in database:', roomData.id);
-        
+        } catch (insertError: any) {
           const insertTime = Date.now() - insertStartTime;
           console.error(`Room insert failed after ${insertTime}ms`);
           console.error('=== ROOM INSERT ERROR ===');

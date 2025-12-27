@@ -365,7 +365,9 @@ class RoomService {
         .from('room_members')
         .select('*')
         .eq('room_id', roomData.id);
-
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'roomService.ts:367',message:'getRoom members query',data:{roomId:roomData.id,membersCount:membersData?.length||0,error:membersError?.code,errorMessage:membersError?.message},timestamp:Date.now(),sessionId:'debug-multiplayer',runId:'run1',hypothesisId:'H4'})}).catch(()=>{});
+      // #endregion
       if (membersError) {
         console.error('Error fetching room members:', membersError);
         console.error('Error details:', {

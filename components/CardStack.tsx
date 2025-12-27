@@ -121,10 +121,6 @@ export const CardStack: React.FC<CardStackProps> = ({
     userId
   });
   
-  // #region agent log
-  fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:120',message:'CardStack initialized',data:{totalMembers,isMultiplayer,userId,roomId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-  // #endregion
-  
   const [currentRoundMovies, setCurrentRoundMovies] = useState<Movie[]>(movies || []);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [likedThisRound, setLikedThisRound] = useState<Movie[]>([]);
@@ -234,10 +230,6 @@ export const CardStack: React.FC<CardStackProps> = ({
       const votes = await roomService.getVotesForMovie(roomId, movie.id, round);
       setCurrentMovieVotes(votes);
       
-      // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:229',message:'loadVotes - votes loaded',data:{votesCount:votes.length,votes:votes.map(v=>({userId:v.userId,vote:v.vote})),totalMembers,movieId:movie.id,round},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-      
       // Controlla se l'utente ha già votato
       const userHasVoted = votes.some(v => v.userId === userId);
       setUserVoted(userHasVoted);
@@ -245,10 +237,6 @@ export const CardStack: React.FC<CardStackProps> = ({
       // Controlla se tutti hanno votato
       const allHaveVoted = votes.length >= totalMembers;
       setAllVoted(allHaveVoted);
-      
-      // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:240',message:'loadVotes - state updated',data:{userHasVoted,allHaveVoted,votesLength:votes.length,totalMembers},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
     };
 
     loadVotes();
@@ -273,10 +261,6 @@ export const CardStack: React.FC<CardStackProps> = ({
     const requiredLikes = getRequiredLikes(totalMembers);
     const likeCount = currentMovieVotes.filter(v => v.vote === 'like').length;
     const isMatch = likeCount >= requiredLikes;
-
-    // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:262',message:'Match calculation',data:{totalMembers,requiredLikes,likeCount,isMatch,allVoted,currentMovieVotes:currentMovieVotes.map(v=>({userId:v.userId,vote:v.vote})),movieId:movie.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
 
     if (isMatch) {
       // Mostra animazione match
@@ -337,16 +321,9 @@ export const CardStack: React.FC<CardStackProps> = ({
     const movie = currentRoundMovies[currentIndex];
     if (!movie) return;
 
-    // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:335',message:'handleSwipe - entry',data:{direction,isMultiplayer,hasRoomId:!!roomId,hasUserId:!!userId,userVoted,allVoted,currentIndex,movieId:movie.id,currentVotesCount:currentMovieVotes.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
-    // #endregion
-
     // In multiplayer, salva il voto e non permettere lo swipe finché tutti non hanno votato
     if (isMultiplayer && roomId && userId) {
       if (userVoted) {
-        // #region agent log
-        fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:344',message:'handleSwipe - already voted, blocking',data:{userId,movieId:movie.id,userVoted},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});
-        // #endregion
         // L'utente ha già votato per questo film, non permettere di cambiare voto
         return;
       }
@@ -354,10 +331,6 @@ export const CardStack: React.FC<CardStackProps> = ({
       // Tutti gli utenti possono votare liberamente - non bloccare se ci sono già altri voti
       // Il passaggio al prossimo film è gestito dal useEffect che aspetta allVoted
       const vote: 'like' | 'dislike' = (direction === 'right' || direction === 'up') ? 'like' : 'dislike';
-      
-      // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:348',message:'handleSwipe - submitting vote',data:{vote,movieId:movie.id,userId,roomId,round,userVoted,allVoted,currentVotesCount:currentMovieVotes.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
-      // #endregion
       
       // Salva il voto
       const success = await roomService.submitVote(roomId, userId, movie.id, vote, round);

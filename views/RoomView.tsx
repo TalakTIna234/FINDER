@@ -44,20 +44,61 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
   const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
-    // Carica user ID
-    authService.getCurrentUser().then(user => {
-      if (user) setCurrentUserId(user.id);
-    });
+    // Carica user ID (sia autenticato che guest)
+    const loadUserId = async () => {
+      const user = await authService.getCurrentUser();
+      if (user) {
+        console.log('[RoomView] Setting currentUserId from authenticated user:', user.id);
+        setCurrentUserId(user.id);
+      } else {
+        // Se non autenticato, usa guest ID
+        const guestId = localStorage.getItem('mm_guest_id');
+        if (guestId) {
+          console.log('[RoomView] Setting currentUserId from guest ID:', guestId);
+          setCurrentUserId(guestId);
+        } else {
+          // Genera guest ID se non esiste
+          const newGuestId = generateUUID();
+          localStorage.setItem('mm_guest_id', newGuestId);
+          console.log('[RoomView] Generated new guest ID:', newGuestId);
+          setCurrentUserId(newGuestId);
+        }
+      }
+    };
+    
+    loadUserId();
     
     if (roomCode && step === 'lobby') {
+      // Assicurati che currentUserId sia caricato anche quando si entra in lobby
+      const ensureUserId = async () => {
+        if (!currentUserId) {
+          const user = await authService.getCurrentUser();
+          if (user) {
+            console.log('[RoomView Lobby] Setting currentUserId from authenticated user:', user.id);
+            setCurrentUserId(user.id);
+          } else {
+            const guestId = localStorage.getItem('mm_guest_id');
+            if (guestId) {
+              console.log('[RoomView Lobby] Setting currentUserId from guest ID:', guestId);
+              setCurrentUserId(guestId);
+            }
+          }
+        }
+      };
+      ensureUserId();
+      
       // Carica stanza dal database
       roomService.getRoom(roomCode).then(currentRoom => {
         if (currentRoom) {
           setRoom(currentRoom);
           // Se la stanza è già in playing, avvia la sessione
-          if (currentRoom.status === 'playing' && currentRoom.movies.length > 0) {
-            console.log('[RoomView] Room is already playing - starting session automatically');
-            onStartSession(currentRoom.movies);
+          if (currentRoom.status === 'playing') {
+            if (currentRoom.movies && currentRoom.movies.length > 0) {
+              console.log('[RoomView] Room is already playing - starting session automatically with', currentRoom.movies.length, 'movies');
+              onStartSession(currentRoom.movies);
+            } else {
+              console.error('[RoomView] Room is already playing but no movies available');
+            }
           }
         }
       });
@@ -73,9 +114,14 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
               setRoom(updatedRoom);
               
               // Se lo status è cambiato a 'playing', avvia la sessione per tutti i membri
-              if (updatedRoom.status === 'playing' && updatedRoom.movies.length > 0) {
-                console.log('[RoomView] Room status changed to playing - starting session for all members');
-                onStartSession(updatedRoom.movies);
+              if (updatedRoom.status === 'playing') {
+                if (updatedRoom.movies && updatedRoom.movies.length > 0) {
+                  console.log('[RoomView] Room status changed to playing - starting session for all members with', updatedRoom.movies.length, 'movies');
+                  onStartSession(updatedRoom.movies);
+                } else {
+                  console.error('[RoomView] Room status is playing but no movies available');
+                  alert('Errore: la stanza non ha film. Contatta l\'host.');
+                }
               }
             }
           });
@@ -153,8 +199,12 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
           provider: 'email' as const
         };
         console.log('Using guest user:', user.id, user.nickname);
+        // Imposta currentUserId per guest
+        setCurrentUserId(guestId);
       } else {
         console.log('User authenticated:', user.id, user.nickname);
+        // Imposta currentUserId per utente autenticato
+        setCurrentUserId(user.id);
       }
       
       // Crea stanza
@@ -224,6 +274,11 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       // Imposta stato
       setRoomCode(newRoom.code);
       setRoom(newRoom);
+      // Assicurati che currentUserId sia impostato correttamente
+      if (!currentUserId || currentUserId !== user.id) {
+        console.log('[Genre Selection] Setting currentUserId to:', user.id);
+        setCurrentUserId(user.id);
+      }
       
       // Salva riferimento alla stanza per l'update in background
       const roomCodeForUpdate = newRoom.code;
@@ -301,13 +356,13 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         return;
       }
       
-      if (currentRoom.movies.length === 0) {
+      if (!currentRoom.movies || currentRoom.movies.length === 0) {
         console.error('Room has no movies');
         alert('La stanza non ha film. Attendi che vengano caricati.');
         return;
       }
       
-      console.log('[RoomView] Host starting session...');
+      console.log('[RoomView] Host starting session with', currentRoom.movies.length, 'movies...');
       const success = await roomService.startRoom(roomCode);
       
       if (success) {
@@ -324,6 +379,32 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       alert('Errore nell\'avvio della sessione. Riprova.');
     }
   };
+  
+  // Determina se l'utente corrente è l'host
+  // Confronta sia hostId che controlla se il membro corrente è host
+  const isHost = room && currentUserId && (
+    room.hostId === currentUserId || 
+    room.members.some(m => m.id === currentUserId && m.isHost === true)
+  );
+  
+  // Debug logging per isHost
+  useEffect(() => {
+    if (room && currentUserId) {
+      const hostMember = room.members.find(m => m.isHost === true);
+      const isHostById = room.hostId === currentUserId;
+      const isHostByMember = room.members.some(m => m.id === currentUserId && m.isHost === true);
+      const calculatedIsHost = isHostById || isHostByMember;
+      console.log('[RoomView] Host check:', {
+        roomHostId: room.hostId,
+        currentUserId: currentUserId,
+        isHostById: isHostById,
+        isHostByMember: isHostByMember,
+        isHost: calculatedIsHost,
+        hostMember: hostMember ? { id: hostMember.id, nickname: hostMember.nickname } : null,
+        allMembers: room.members.map(m => ({ id: m.id, nickname: m.nickname, isHost: m.isHost }))
+      });
+    }
+  }, [room, currentUserId]);
 
   // Funzioni per modalità manuale - ricerca automatica con debounce
   useEffect(() => {
@@ -444,6 +525,11 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
           nickname: guestNickname,
           provider: 'email' as const
         };
+        // Imposta currentUserId per guest
+        setCurrentUserId(guestId);
+      } else {
+        // Imposta currentUserId per utente autenticato
+        setCurrentUserId(user.id);
       }
       
       if (!isMounted) {
@@ -478,6 +564,11 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       
       setRoomCode(newRoom.code);
       setRoom(newRoom);
+      // Assicurati che currentUserId sia impostato correttamente
+      if (!currentUserId || currentUserId !== user.id) {
+        console.log('[Manual Room] Setting currentUserId to:', user.id);
+        setCurrentUserId(user.id);
+      }
       
       // Statistiche non bloccanti
       statsService.increment('rooms_created').catch(err => {
@@ -675,8 +766,12 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                     provider: 'email' as const
                   };
                   console.log('Using guest user:', user.id, user.nickname);
+                  // Imposta currentUserId per guest
+                  setCurrentUserId(guestId);
                 } else {
                   console.log('User authenticated:', user.id);
+                  // Imposta currentUserId per utente autenticato
+                  setCurrentUserId(user.id);
                 }
                 
                 // Verifica che la stanza esista
@@ -701,6 +796,8 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                 }
                 
                 console.log('Successfully joined room:', joinedRoom.code);
+                console.log('[Join Room] Setting currentUserId to:', user.id);
+                setCurrentUserId(user.id);
                 setRoom(joinedRoom);
                 
                 // Incrementa statistiche (non bloccante)
@@ -1012,16 +1109,64 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
           </div>
 
           <div className="sticky bottom-0 pt-3 bg-gradient-to-t from-black via-black/95 to-transparent dark:from-white dark:via-white/95 pb-4 -mx-6 px-6 z-10">
-            <HapticButton 
-              onClick={startSession}
-              className="group w-full py-4 bg-gradient-to-br from-red-600 via-purple-700 to-indigo-800 dark:from-red-500 dark:via-purple-600 dark:to-indigo-700 text-white rounded-[24px] font-black text-base italic uppercase tracking-widest shadow-2xl shadow-purple-600/30 dark:shadow-purple-500/30 active:scale-[0.96] transition-all relative overflow-hidden"
-            >
-              <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-10 transition-opacity" />
-              <div className="flex items-center justify-center gap-2 relative z-10">
-                <Play fill="currentColor" size={20} className="animate-pulse" />
-                Inizia Match
-              </div>
-            </HapticButton>
+            {isHost ? (
+              <HapticButton 
+                onClick={startSession}
+                className="group w-full py-4 bg-gradient-to-br from-red-600 via-purple-700 to-indigo-800 dark:from-red-500 dark:via-purple-600 dark:to-indigo-700 text-white rounded-[24px] font-black text-base italic uppercase tracking-widest shadow-2xl shadow-purple-600/30 dark:shadow-purple-500/30 active:scale-[0.96] transition-all relative overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-10 transition-opacity" />
+                <div className="flex items-center justify-center gap-2 relative z-10">
+                  <Play fill="currentColor" size={20} className="animate-pulse" />
+                  Inizia Match
+                </div>
+              </HapticButton>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="w-full py-6 px-6 bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-indigo-600/20 dark:from-blue-500/30 dark:via-purple-500/30 dark:to-indigo-500/30 backdrop-blur-xl rounded-[32px] border border-white/10 dark:border-black/20 relative overflow-hidden"
+              >
+                {/* Effetti decorativi animati */}
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/0 via-purple-600/20 to-indigo-600/0 animate-pulse" />
+                <div className="absolute top-0 left-1/4 w-32 h-32 bg-purple-600/20 dark:bg-purple-500/30 blur-3xl rounded-full animate-ping" style={{ animationDuration: '3s' }} />
+                <div className="absolute bottom-0 right-1/4 w-24 h-24 bg-indigo-600/20 dark:bg-indigo-500/30 blur-2xl rounded-full animate-ping" style={{ animationDuration: '4s', animationDelay: '1s' }} />
+                
+                <div className="relative z-10 text-center">
+                  <motion.div
+                    animate={{ rotate: [0, 10, -10, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
+                    className="inline-block mb-3"
+                  >
+                    <Play className="w-12 h-12 text-purple-500 dark:text-purple-400 mx-auto" />
+                  </motion.div>
+                  <h3 className="text-white dark:text-black font-black text-lg italic uppercase tracking-wider mb-2">
+                    In Attesa
+                  </h3>
+                  <p className="text-white/70 dark:text-black/70 text-xs font-bold leading-relaxed">
+                    L'host sta per iniziare<br />la partita...
+                  </p>
+                  
+                  {/* Indicatore di caricamento */}
+                  <div className="mt-4 flex items-center justify-center gap-2">
+                    <motion.div
+                      className="w-2 h-2 bg-purple-500 rounded-full"
+                      animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                      transition={{ duration: 1, repeat: Infinity, delay: 0 }}
+                    />
+                    <motion.div
+                      className="w-2 h-2 bg-indigo-500 rounded-full"
+                      animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                      transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
+                    />
+                    <motion.div
+                      className="w-2 h-2 bg-blue-500 rounded-full"
+                      animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                      transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </div>
         </div>
       )}

@@ -16,9 +16,10 @@ interface CardProps {
   isFront: boolean;
   onShowDetails: () => void;
   onRequestTrailer?: (movie: Movie, trailerKey: string) => void;
+  isPaused?: boolean;
 }
 
-const MovieCard: React.FC<CardProps> = ({ movie, onSwipe, isFront, onShowDetails, onRequestTrailer }) => {
+const MovieCard: React.FC<CardProps> = ({ movie, onSwipe, isFront, onShowDetails, onRequestTrailer, isPaused = false }) => {
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const rotate = useTransform(x, [-200, 200], [-25, 25]);
@@ -258,6 +259,23 @@ export const CardStack: React.FC<CardStackProps> = ({
     );
   }
 
+  // Se non ci sono film, mostra messaggio di errore
+  if (!movies || movies.length === 0) {
+    return (
+      <div className="relative w-full h-full flex flex-col items-center justify-center bg-black dark:bg-white overflow-hidden transition-colors duration-500 p-6">
+        <div className="text-center max-w-md">
+          <div className="w-20 h-20 bg-red-600/20 dark:bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <X className="w-10 h-10 text-red-600 dark:text-red-500" />
+          </div>
+          <h2 className="text-2xl font-black text-white dark:text-black mb-2">Nessun Film Disponibile</h2>
+          <p className="text-white/60 dark:text-black/60 text-sm">
+            La sessione non può iniziare senza film. Contatta l'host della stanza.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative w-full h-full flex flex-col items-center justify-center bg-black dark:bg-white overflow-hidden transition-colors duration-500">
       <header className="absolute top-16 z-50 flex flex-col items-center gap-1">
@@ -280,7 +298,8 @@ export const CardStack: React.FC<CardStackProps> = ({
               onRequestTrailer={isMultiplayer ? (movie, trailerKey) => {
                 handleRequestTrailer(movie, trailerKey);
               } : undefined}
-              isFront={idx === 1 || currentRoundMovies.length - currentIndex === 1} 
+              isFront={idx === 1 || currentRoundMovies.length - currentIndex === 1}
+              isPaused={isPaused}
             />
           ))}
         </AnimatePresence>

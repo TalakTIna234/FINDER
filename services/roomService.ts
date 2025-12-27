@@ -559,11 +559,13 @@ class RoomService {
   // Sottoscrizione real-time per aggiornamenti stanza
   subscribeToRoom(code: string, callback: (room: Room | null) => void) {
     let roomId: string | null = null;
+    let unsubscribe: (() => void) | null = null;
     
     // Prima carica la stanza per ottenere l'ID
     this.getRoom(code).then(room => {
       if (room) {
         roomId = room.id;
+        console.log(`[RoomService] Subscribing to room ${code} (id: ${roomId})`);
         callback(room);
         
         // Poi sottoscrivi agli aggiornamenti
@@ -576,9 +578,15 @@ class RoomService {
               table: 'rooms',
               filter: `code=eq.${code}`
             },
-            () => {
+            (payload) => {
+              console.log(`[RoomService] Room ${code} changed:`, payload.eventType);
               // Ricarica stanza quando cambia
-              this.getRoom(code).then(callback);
+              this.getRoom(code).then(updatedRoom => {
+                if (updatedRoom) {
+                  console.log(`[RoomService] Room ${code} reloaded, members:`, updatedRoom.members.length);
+                  callback(updatedRoom);
+                }
+              });
             }
           )
           .on('postgres_changes',
@@ -588,22 +596,33 @@ class RoomService {
               table: 'room_members',
               filter: `room_id=eq.${roomId}`
             },
-            () => {
+            (payload) => {
+              console.log(`[RoomService] Room ${code} members changed:`, payload.eventType);
               // Ricarica stanza quando cambiano i membri
-              this.getRoom(code).then(callback);
+              this.getRoom(code).then(updatedRoom => {
+                if (updatedRoom) {
+                  console.log(`[RoomService] Room ${code} members reloaded:`, updatedRoom.members.length);
+                  callback(updatedRoom);
+                }
+              });
             }
           )
-          .subscribe();
+          .subscribe((status) => {
+            console.log(`[RoomService] Subscription status for room ${code}:`, status);
+          });
 
-        // Ritorna funzione di cleanup
-        return () => {
+        // Salva funzione di cleanup
+        unsubscribe = () => {
+          console.log(`[RoomService] Unsubscribing from room ${code}`);
           supabase.removeChannel(roomChannel);
         };
       }
     });
 
-    // Ritorna funzione di cleanup vuota se la stanza non esiste ancora
-    return () => {};
+    // Ritorna funzione di cleanup
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }
 }
 

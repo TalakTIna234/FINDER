@@ -224,11 +224,26 @@ export const CardStack: React.FC<CardStackProps> = ({
       setCurrentMovieVotes([]);
       setUserVoted(false);
       setAllVoted(false);
+      setHasProcessedVotes(false);
+      setIsInstantMatch(false);
+      if (matchTimeoutRef.current) {
+        clearTimeout(matchTimeoutRef.current);
+        matchTimeoutRef.current = null;
+      }
       return;
     }
 
     const movie = currentRoundMovies[currentIndex];
     if (!movie) return;
+    
+    // Reset quando cambia il film (currentIndex cambia)
+    setHasProcessedVotes(false);
+    setIsInstantMatch(false);
+    // Pulisci il timeout se esiste
+    if (matchTimeoutRef.current) {
+      clearTimeout(matchTimeoutRef.current);
+      matchTimeoutRef.current = null;
+    }
 
     const loadVotes = async () => {
       const votes = await roomService.getVotesForMovie(roomId, movie.id, round);

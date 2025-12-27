@@ -106,11 +106,20 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       // Sottoscrivi agli aggiornamenti real-time
       let unsubscribe: (() => void) | null = null;
       
-      // Carica stanza e poi sottoscrivi
-      roomService.getRoom(roomCode).then(room => {
-        if (room) {
-          console.log('[RoomView] Setting up subscription for room:', roomCode);
-          unsubscribe = roomService.subscribeToRoom(roomCode, (updatedRoom) => {
+      // Carica stanza inizialmente e poi sottoscrivi - FORZA ricaricamento
+      const setupSubscription = async () => {
+        try {
+          const initialRoom = await roomService.getRoom(roomCode);
+          if (initialRoom) {
+            console.log('[RoomView] Initial room loaded:', {
+              code: initialRoom.code,
+              membersCount: initialRoom.members.length,
+              members: initialRoom.members.map(m => ({ id: m.id, nickname: m.nickname, status: m.status }))
+            });
+            setRoom(initialRoom);
+            
+            console.log('[RoomView] Setting up subscription for room:', roomCode);
+            unsubscribe = roomService.subscribeToRoom(roomCode, (updatedRoom) => {
             if (updatedRoom) {
               console.log('[RoomView] Room updated via subscription:', {
                 code: updatedRoom.code,

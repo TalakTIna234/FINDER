@@ -6,7 +6,7 @@ export interface RoomMember {
   id: string;
   nickname: string;
   isHost: boolean;
-  status: 'ready' | 'playing';
+  status: 'ready' | 'playing' | 'lobby';
 }
 
 export interface Room {
@@ -437,7 +437,7 @@ class RoomService {
           room_id: room.id,
           user_id: userId,
           nickname,
-          status: 'ready' // Imposta inizialmente a 'ready',
+          status: 'lobby' // Imposta inizialmente a 'lobby' (non pronto),
           is_host: false,
           status: 'ready'
         })

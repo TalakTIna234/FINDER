@@ -671,7 +671,7 @@ class RoomService {
               event: '*',
               schema: 'public',
               table: 'room_members',
-              filter: `room_id=eq.${roomId}` // roomId è già disponibile qui
+              filter: `room_id=eq.${roomId}` // Filtra per room_id (UUID)
             },
             (payload) => {
               // #region agent log

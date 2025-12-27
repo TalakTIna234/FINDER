@@ -497,35 +497,37 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
       }
       
       console.log('[RoomView] Host starting session with', currentRoom.movies.length, 'movies...');
+      
+      // IMPORTANTE: Salva i dati della stanza PRIMA di chiamare startRoom
+      // perché la subscription potrebbe chiamare onStartSession prima che questa funzione finisca
+      const moviesToStart = currentRoom.movies;
+      const roomIdToStart = currentRoom.id;
+      const membersCountToStart = currentRoom.members.length;
+      
+      if (!moviesToStart || moviesToStart.length === 0) {
+        console.error('[RoomView] No movies to start session with!');
+        showToast('Errore: nessun film disponibile per iniziare la sessione.', 'error');
+        return;
+      }
+      
+      console.log('[RoomView] Starting session immediately with saved data:', {
+        moviesCount: moviesToStart.length,
+        roomId: roomIdToStart,
+        membersCount: membersCountToStart
+      });
+      
+      // Avvia la sessione immediatamente con i dati già disponibili
+      onStartSession(moviesToStart, roomCode, roomIdToStart, membersCountToStart);
+      
+      // POI aggiorna lo status della stanza (la subscription gestirà gli altri player)
       const success = await roomService.startRoom(roomCode);
       
-      if (success) {
+      if (!success) {
+        console.error('[RoomView] Failed to update room status to playing');
+        showToast('Errore nell\'aggiornamento dello status della stanza.', 'error');
+      } else {
         console.log('[RoomView] Room status updated to playing in database');
-        
-        // Aspetta un attimo per assicurarsi che il cambio di status sia propagato
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        // Ricarica la stanza per ottenere lo stato aggiornato
-        const updatedRoom = await roomService.getRoom(roomCode);
-        console.log('[RoomView] Room reloaded:', {
-          status: updatedRoom?.status,
-          moviesCount: updatedRoom?.movies?.length || 0,
-          membersCount: updatedRoom?.members?.length || 0
-        });
-        
-        if (updatedRoom && updatedRoom.status === 'playing' && updatedRoom.movies && updatedRoom.movies.length > 0) {
-          console.log('[RoomView] Room confirmed as playing, starting session for host with', updatedRoom.movies.length, 'movies');
-          // L'host entra immediatamente in sessione
-          // Gli altri membri entreranno automaticamente tramite la subscription real-time
-          onStartSession(updatedRoom.movies, roomCode, updatedRoom.id, updatedRoom.members.length);
-        } else if (currentRoom.movies && currentRoom.movies.length > 0) {
-          console.log('[RoomView] Using currentRoom movies as fallback:', currentRoom.movies.length, 'movies');
-          // Fallback: usa i film della stanza corrente
-          onStartSession(currentRoom.movies, roomCode, currentRoom.id, currentRoom.members.length);
-        } else {
-          console.error('[RoomView] No movies available in room!');
-          showToast('Errore: la stanza non ha film disponibili. Riprova.', 'error');
-        }
+      }
       } else {
         console.error('Failed to start room');
         showToast('Errore nell\'avvio della sessione. Riprova.', 'error');

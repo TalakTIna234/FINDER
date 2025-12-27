@@ -469,13 +469,23 @@ export const CardStack: React.FC<CardStackProps> = ({
       </div>
 
       <div className="flex items-center gap-8 mt-12 mb-10 z-[50]">
+        {/* Pulsante X con stile liquid glass Apple */}
         <HapticButton 
           impact="heavy"
           onClick={() => handleSwipe('left')}
           disabled={isPaused || (isMultiplayer && (userVoted || !allVoted))}
-          className="w-16 h-16 rounded-full bg-white/5 dark:bg-black/10 border border-white/10 dark:border-black/20 flex items-center justify-center text-red-500 dark:text-red-600 shadow-xl active:bg-red-500/10 dark:active:bg-red-600/20 transition-colors duration-500 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="group relative w-16 h-16 rounded-full backdrop-blur-2xl border border-red-500/30 dark:border-red-400/30 flex items-center justify-center text-red-500 dark:text-red-400 shadow-2xl disabled:opacity-30 disabled:cursor-not-allowed overflow-hidden transition-all duration-300 active:scale-95"
+          style={{
+            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.1) 100%)'
+          }}
         >
-          <X size={32} strokeWidth={3} />
+          {/* Effetti liquid glass */}
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-50" />
+          <div className="absolute top-0 left-0 w-20 h-20 bg-red-400/20 blur-2xl rounded-full -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-20 h-20 bg-red-500/20 blur-2xl rounded-full translate-x-1/3 translate-y-1/3" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
+          
+          <X size={28} strokeWidth={2.5} className="relative z-10 transition-transform duration-200 group-active:scale-110" />
         </HapticButton>
 
         <HapticButton 
@@ -487,17 +497,8 @@ export const CardStack: React.FC<CardStackProps> = ({
           <Star size={32} fill="currentColor" strokeWidth={0} />
         </HapticButton>
 
-        <HapticButton 
-          impact="heavy"
-          onClick={() => handleSwipe('right')}
-          disabled={isPaused || (isMultiplayer && (userVoted || !allVoted))}
-          className="w-16 h-16 rounded-full bg-green-500 dark:bg-green-600 flex items-center justify-center text-white shadow-xl active:bg-green-400 dark:active:bg-green-500 transition-colors duration-500 disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <Heart size={32} fill="currentColor" strokeWidth={0} />
-        </HapticButton>
-        
-        {/* Pulsante trailer in basso (solo se disponibile) */}
-        {isMultiplayer && currentRoundMovies[currentIndex] && (
+        {/* Pulsante trailer dopo la stella (solo in multiplayer e se disponibile) */}
+        {isMultiplayer && currentMovieHasTrailer && (
           <HapticButton
             impact="medium"
             onClick={async () => {
@@ -510,11 +511,29 @@ export const CardStack: React.FC<CardStackProps> = ({
               }
             }}
             disabled={isPaused || (isMultiplayer && (userVoted || !allVoted))}
-            className="w-16 h-16 rounded-full bg-white/5 dark:bg-black/10 border border-white/10 dark:border-black/20 flex items-center justify-center text-white dark:text-black shadow-xl active:bg-white/10 dark:active:bg-black/20 transition-colors duration-500 disabled:opacity-30 disabled:cursor-not-allowed"
+            className="group relative w-16 h-16 rounded-full backdrop-blur-2xl border border-purple-500/40 dark:border-purple-400/40 flex items-center justify-center text-purple-400 dark:text-purple-300 shadow-2xl disabled:opacity-30 disabled:cursor-not-allowed overflow-hidden transition-all duration-300 active:scale-95"
+            style={{
+              background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.2) 0%, rgba(147, 51, 234, 0.15) 100%)'
+            }}
           >
-            <PlayCircle size={24} />
+            {/* Effetti liquid glass */}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-50" />
+            <div className="absolute top-0 left-0 w-20 h-20 bg-purple-400/20 blur-2xl rounded-full -translate-x-1/2 -translate-y-1/2" />
+            <div className="absolute bottom-0 right-0 w-20 h-20 bg-pink-400/20 blur-2xl rounded-full translate-x-1/3 translate-y-1/3" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent" />
+            
+            <PlayCircle size={26} className="relative z-10 transition-transform duration-200 group-active:scale-110" fill="currentColor" />
           </HapticButton>
         )}
+
+        <HapticButton 
+          impact="heavy"
+          onClick={() => handleSwipe('right')}
+          disabled={isPaused || (isMultiplayer && (userVoted || !allVoted))}
+          className="w-16 h-16 rounded-full bg-green-500 dark:bg-green-600 flex items-center justify-center text-white shadow-xl active:bg-green-400 dark:active:bg-green-500 transition-colors duration-500 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <Heart size={32} fill="currentColor" strokeWidth={0} />
+        </HapticButton>
       </div>
 
       {/* Supertrailer Overlay */}

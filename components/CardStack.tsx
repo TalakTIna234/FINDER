@@ -109,7 +109,16 @@ export const CardStack: React.FC<CardStackProps> = ({
   roomCode,
   roomId
 }) => {
-  const [currentRoundMovies, setCurrentRoundMovies] = useState<Movie[]>(movies);
+  console.log('[CardStack] Initialized with:', {
+    moviesCount: movies?.length || 0,
+    isMultiplayer,
+    totalMembers,
+    roomCode,
+    roomId,
+    userId
+  });
+  
+  const [currentRoundMovies, setCurrentRoundMovies] = useState<Movie[]>(movies || []);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [likedThisRound, setLikedThisRound] = useState<Movie[]>([]);
   const [round, setRound] = useState(1);
@@ -366,7 +375,11 @@ export const CardStack: React.FC<CardStackProps> = ({
   }
 
   // Se non ci sono film, mostra messaggio di errore
-  if (!movies || movies.length === 0) {
+  if (!movies || movies.length === 0 || !currentRoundMovies || currentRoundMovies.length === 0) {
+    console.error('[CardStack] No movies available!', {
+      moviesLength: movies?.length || 0,
+      currentRoundMoviesLength: currentRoundMovies?.length || 0
+    });
     return (
       <div className="relative w-full h-full flex flex-col items-center justify-center bg-black dark:bg-white overflow-hidden transition-colors duration-500 p-6">
         <div className="text-center max-w-md">
@@ -376,6 +389,9 @@ export const CardStack: React.FC<CardStackProps> = ({
           <h2 className="text-2xl font-black text-white dark:text-black mb-2">Nessun Film Disponibile</h2>
           <p className="text-white/60 dark:text-black/60 text-sm">
             La sessione non può iniziare senza film. Contatta l'host della stanza.
+          </p>
+          <p className="text-white/40 dark:text-black/40 text-xs mt-2">
+            Movies: {movies?.length || 0}, Round: {currentRoundMovies?.length || 0}
           </p>
         </div>
       </div>

@@ -299,14 +299,14 @@ const App: React.FC = () => {
         setCurrentUserId(user.id);
       } else {
         // Guest mode - usa localStorage
-        const saved = localStorage.getItem('mm_playlist');
-        if (saved) setLikedMovies(JSON.parse(saved));
-        const guestStatus = localStorage.getItem('mm_isGuest');
-        if (guestStatus !== null) setIsGuest(guestStatus === 'true');
-        const savedNick = localStorage.getItem('mm_nickname');
-        if (savedNick) setNickname(savedNick);
-        const savedBio = localStorage.getItem('mm_bio');
-        if (savedBio) setBio(savedBio);
+    const saved = localStorage.getItem('mm_playlist');
+    if (saved) setLikedMovies(JSON.parse(saved));
+    const guestStatus = localStorage.getItem('mm_isGuest');
+    if (guestStatus !== null) setIsGuest(guestStatus === 'true');
+    const savedNick = localStorage.getItem('mm_nickname');
+    if (savedNick) setNickname(savedNick);
+    const savedBio = localStorage.getItem('mm_bio');
+    if (savedBio) setBio(savedBio);
       }
     };
     
@@ -439,8 +439,8 @@ const App: React.FC = () => {
     try {
       await profileService.updateProfile({ nickname, bio });
       // Salva anche in localStorage come backup
-      localStorage.setItem('mm_nickname', nickname);
-      localStorage.setItem('mm_bio', bio);
+    localStorage.setItem('mm_nickname', nickname);
+    localStorage.setItem('mm_bio', bio);
     } catch (error) {
       console.error('Error saving profile:', error);
     } finally {
@@ -571,6 +571,19 @@ const App: React.FC = () => {
         setCurrentRoomMembers(1);
       }} 
       onStartSession={(movies, roomCode, roomId, membersCount) => { 
+        console.log('[App] onStartSession called:', {
+          moviesCount: movies?.length || 0,
+          roomCode,
+          roomId,
+          membersCount
+        });
+        
+        if (!movies || movies.length === 0) {
+          console.error('[App] No movies provided to onStartSession!');
+          alert('Errore: nessun film disponibile. Riprova.');
+          return;
+        }
+        
         setCurrentMovies(movies); 
         setIsSessionActive(true);
         setCurrentRoomCode(roomCode || null);
@@ -661,7 +674,7 @@ const App: React.FC = () => {
                    </HapticButton>
                    
                    {/* Email Login - Stile Liquid Glass */}
-                   <HapticButton 
+               <HapticButton 
                     onClick={() => {
                       setShowEmailAuth(true);
                       setIsSignUp(false); // Imposta in modalità login
@@ -671,7 +684,7 @@ const App: React.FC = () => {
                      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent dark:from-black/5 dark:to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                      <Mail size={22} className="relative z-10" /> 
                      <span className="relative z-10">Accedi con Email</span>
-                   </HapticButton>
+               </HapticButton>
                    
                    {/* Link testo per registrazione */}
                    <div className="text-center pt-3">
@@ -746,7 +759,7 @@ const App: React.FC = () => {
                    </div>
                    
                    {/* Submit button con effetto Netflix */}
-                   <HapticButton
+               <HapticButton 
                      onClick={async () => {
                        if (!email || !password) {
                          alert('Inserisci email e password');
@@ -878,7 +891,7 @@ const App: React.FC = () => {
                      <span className="relative z-10">
                        {loading ? 'Caricamento...' : (isSignUp ? 'Crea Account' : 'Accedi')}
                      </span>
-                   </HapticButton>
+               </HapticButton>
                    
                    {/* Icone registrazione veloce - solo nella sezione registrazione */}
                    {isSignUp && (
@@ -1016,10 +1029,10 @@ const App: React.FC = () => {
                                 className="p-2 bg-blue-600 rounded-lg text-white"
                                 disabled={loading}
                               >
-                                <UserPlus size={16} />
-                              </HapticButton>
+                          <UserPlus size={16} />
+                        </HapticButton>
                             )}
-                          </div>
+                      </div>
                         );
                       })
                     ) : (
@@ -1173,14 +1186,14 @@ const App: React.FC = () => {
 
               {/* Stato Account */}
               <div className="bg-white/5 dark:bg-black/10 backdrop-blur-2xl p-6 rounded-[32px] border border-white/10 dark:border-black/20 shadow-2xl transition-colors duration-500">
-                <div className="flex justify-between items-center">
+             <div className="flex justify-between items-center">
                   <span className="text-[10px] font-black uppercase opacity-60 dark:opacity-70 tracking-widest text-white dark:text-black">Stato Account</span>
                   <span className="font-black text-[10px] uppercase px-4 py-2 rounded-full bg-gradient-to-r from-red-600 to-red-700 dark:from-red-500 dark:to-red-600 text-white shadow-lg shadow-red-600/30 dark:shadow-red-500/30 border border-red-500/30 dark:border-red-400/30">
                     Premium
                   </span>
-                </div>
-              </div>
-            </div>
+             </div>
+             </div>
+          </div>
           )}
           
           {!isGuest && (

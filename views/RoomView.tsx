@@ -457,6 +457,19 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         return;
       }
       
+      // Verifica che tutti i membri siano pronti
+      const allMembersReady = currentRoom.members.every(m => m.status === 'ready');
+      if (!allMembersReady) {
+        const notReadyCount = currentRoom.members.filter(m => m.status !== 'ready').length;
+        alert(`Attendi che tutti i player siano pronti! (${notReadyCount} player non ancora pronti)`);
+        return;
+      }
+      
+      if (currentRoom.members.length < 1) {
+        alert('Devi avere almeno un altro player nella stanza per iniziare!');
+        return;
+      }
+      
       if (!currentRoom.movies || currentRoom.movies.length === 0) {
         console.error('Room has no movies');
         alert('La stanza non ha film. Attendi che vengano caricati.');
@@ -474,15 +487,24 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         
         // Ricarica la stanza per ottenere lo stato aggiornato
         const updatedRoom = await roomService.getRoom(roomCode);
-        if (updatedRoom && updatedRoom.status === 'playing' && updatedRoom.movies.length > 0) {
-          console.log('[RoomView] Room confirmed as playing, starting session for host');
+        console.log('[RoomView] Room reloaded:', {
+          status: updatedRoom?.status,
+          moviesCount: updatedRoom?.movies?.length || 0,
+          membersCount: updatedRoom?.members?.length || 0
+        });
+        
+        if (updatedRoom && updatedRoom.status === 'playing' && updatedRoom.movies && updatedRoom.movies.length > 0) {
+          console.log('[RoomView] Room confirmed as playing, starting session for host with', updatedRoom.movies.length, 'movies');
           // L'host entra immediatamente in sessione
           // Gli altri membri entreranno automaticamente tramite la subscription real-time
           onStartSession(updatedRoom.movies, roomCode, updatedRoom.id, updatedRoom.members.length);
-        } else {
-          console.error('[RoomView] Room not in playing state after update');
+        } else if (currentRoom.movies && currentRoom.movies.length > 0) {
+          console.log('[RoomView] Using currentRoom movies as fallback:', currentRoom.movies.length, 'movies');
           // Fallback: usa i film della stanza corrente
           onStartSession(currentRoom.movies, roomCode, currentRoom.id, currentRoom.members.length);
+        } else {
+          console.error('[RoomView] No movies available in room!');
+          alert('Errore: la stanza non ha film disponibili. Riprova.');
         }
       } else {
         console.error('Failed to start room');

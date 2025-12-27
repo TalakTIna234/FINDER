@@ -136,6 +136,7 @@ export const CardStack: React.FC<CardStackProps> = ({
   const [votePollInterval, setVotePollInterval] = useState<NodeJS.Timeout | null>(null);
   const [hasProcessedVotes, setHasProcessedVotes] = useState(false); // Flag per prevenire riprocessamento
   const processedVotesRef = React.useRef<{ userId: string; vote: 'like' | 'dislike' }[]>([]); // Ref per tracciare i voti processati
+  const matchTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Ref per il timeout del match
   
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [detailedMovie, setDetailedMovie] = useState<Movie | null>(null);
@@ -302,26 +303,42 @@ export const CardStack: React.FC<CardStackProps> = ({
     // Aspetta 1.5 secondi per mostrare l'animazione (se c'è match), poi passa al prossimo film
     // Se non c'è match, passa immediatamente al prossimo film (500ms)
     const delay = isMatch ? 1500 : 500;
-    const timeout = setTimeout(() => {
+    
+    // Pulisci il timeout precedente se esiste
+    if (matchTimeoutRef.current) {
+      clearTimeout(matchTimeoutRef.current);
+    }
+    
+    matchTimeoutRef.current = setTimeout(() => {
       // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:304',message:'Moving to next movie (timeout executed)',data:{currentIndex,movieId:movie.id,isMatch,delay},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:308',message:'Moving to next movie (timeout executed)',data:{currentIndex,movieId:movie.id,isMatch,delay},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
       // #endregion
       setIsInstantMatch(false);
+      matchTimeoutRef.current = null;
       moveToNextMovie();
     }, delay);
 
     return () => {
       // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:312',message:'allVoted effect cleanup - clearing timeout',data:{currentIndex,movieId:movie.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:318',message:'allVoted effect cleanup - clearing timeout',data:{currentIndex},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
       // #endregion
-      clearTimeout(timeout);
+      if (matchTimeoutRef.current) {
+        clearTimeout(matchTimeoutRef.current);
+        matchTimeoutRef.current = null;
+      }
     };
   }, [allVoted, isMultiplayer, roomId, currentIndex, round, totalMembers, hasProcessedVotes]);
 
   const moveToNextMovie = async () => {
     // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:288',message:'moveToNextMovie called',data:{currentIndex,totalMovies:currentRoundMovies.length,round,isMultiplayer},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'K'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:328',message:'moveToNextMovie called',data:{currentIndex,totalMovies:currentRoundMovies.length,round,isMultiplayer},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'K'})}).catch(()=>{});
     // #endregion
+    
+    // Pulisci il timeout se esiste
+    if (matchTimeoutRef.current) {
+      clearTimeout(matchTimeoutRef.current);
+      matchTimeoutRef.current = null;
+    }
     
     setIsInstantMatch(false); // Resetta sempre l'animazione match
     setHasProcessedVotes(false); // Reset del flag per il prossimo film

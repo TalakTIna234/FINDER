@@ -1121,51 +1121,39 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                 </div>
               </HapticButton>
             ) : (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="w-full py-6 px-6 bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-indigo-600/20 dark:from-blue-500/30 dark:via-purple-500/30 dark:to-indigo-500/30 backdrop-blur-xl rounded-[32px] border border-white/10 dark:border-black/20 relative overflow-hidden"
-              >
-                {/* Effetti decorativi animati */}
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600/0 via-purple-600/20 to-indigo-600/0 animate-pulse" />
-                <div className="absolute top-0 left-1/4 w-32 h-32 bg-purple-600/20 dark:bg-purple-500/30 blur-3xl rounded-full animate-ping" style={{ animationDuration: '3s' }} />
-                <div className="absolute bottom-0 right-1/4 w-24 h-24 bg-indigo-600/20 dark:bg-indigo-500/30 blur-2xl rounded-full animate-ping" style={{ animationDuration: '4s', animationDelay: '1s' }} />
-                
-                <div className="relative z-10 text-center">
+              <div className="w-full py-3 px-4 bg-white/5 dark:bg-black/10 backdrop-blur-md rounded-[20px] border border-white/10 dark:border-black/20">
+                <div className="flex items-center justify-center gap-2.5">
                   <motion.div
-                    animate={{ rotate: [0, 10, -10, 0] }}
-                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
-                    className="inline-block mb-3"
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                    className="flex-shrink-0"
                   >
-                    <Play className="w-12 h-12 text-purple-500 dark:text-purple-400 mx-auto" />
+                    <Play className="w-4 h-4 text-purple-500 dark:text-purple-400" fill="currentColor" />
                   </motion.div>
-                  <h3 className="text-white dark:text-black font-black text-lg italic uppercase tracking-wider mb-2">
-                    In Attesa
-                  </h3>
-                  <p className="text-white/70 dark:text-black/70 text-xs font-bold leading-relaxed">
-                    L'host sta per iniziare<br />la partita...
-                  </p>
-                  
-                  {/* Indicatore di caricamento */}
-                  <div className="mt-4 flex items-center justify-center gap-2">
+                  <div className="flex-1 text-center">
+                    <p className="text-white dark:text-black font-bold text-[11px] italic uppercase tracking-wide">
+                      In attesa che l'host inizi...
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
                     <motion.div
-                      className="w-2 h-2 bg-purple-500 rounded-full"
-                      animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
+                      className="w-1.5 h-1.5 bg-purple-500 rounded-full"
+                      animate={{ scale: [1, 1.3, 1], opacity: [0.4, 1, 0.4] }}
                       transition={{ duration: 1, repeat: Infinity, delay: 0 }}
                     />
                     <motion.div
-                      className="w-2 h-2 bg-indigo-500 rounded-full"
-                      animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                      transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
+                      className="w-1.5 h-1.5 bg-purple-500 rounded-full"
+                      animate={{ scale: [1, 1.3, 1], opacity: [0.4, 1, 0.4] }}
+                      transition={{ duration: 1, repeat: Infinity, delay: 0.3 }}
                     />
                     <motion.div
-                      className="w-2 h-2 bg-blue-500 rounded-full"
-                      animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                      transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
+                      className="w-1.5 h-1.5 bg-purple-500 rounded-full"
+                      animate={{ scale: [1, 1.3, 1], opacity: [0.4, 1, 0.4] }}
+                      transition={{ duration: 1, repeat: Infinity, delay: 0.6 }}
                     />
                   </div>
                 </div>
-              </motion.div>
+              </div>
             )}
           </div>
         </div>

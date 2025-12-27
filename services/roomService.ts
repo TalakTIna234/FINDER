@@ -493,21 +493,27 @@ class RoomService {
   async startRoom(code: string): Promise<boolean> {
     try {
       const room = await this.getRoom(code);
-      if (!room) return false;
-
-      const { error } = await supabase
-        .from('rooms')
-        .update({ status: 'playing' })
-        .eq('code', code);
-
-      if (error) {
-        console.error('Error starting room:', error);
+      if (!room) {
+        console.error('[startRoom] Room not found:', code);
         return false;
       }
 
+      console.log('[startRoom] Updating room status to playing:', code);
+      const { data, error } = await supabase
+        .from('rooms')
+        .update({ status: 'playing', updated_at: new Date().toISOString() })
+        .eq('code', code)
+        .select();
+
+      if (error) {
+        console.error('[startRoom] Error updating room:', error);
+        return false;
+      }
+
+      console.log('[startRoom] Room status updated successfully:', data);
       return true;
     } catch (error) {
-      console.error('Error in startRoom:', error);
+      console.error('[startRoom] Exception:', error);
       return false;
     }
   }

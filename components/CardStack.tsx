@@ -237,6 +237,12 @@ export const CardStack: React.FC<CardStackProps> = ({
       // Controlla se tutti hanno votato
       const allHaveVoted = votes.length >= totalMembers;
       setAllVoted(allHaveVoted);
+      
+      // #region agent log
+      if (allHaveVoted) {
+        fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:238',message:'All voted detected in loadVotes',data:{movieId:movie.id,round,votesCount:votes.length,totalMembers,votes:votes.map(v=>({userId:v.userId,vote:v.vote})),userHasVoted},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'L'})}).catch(()=>{});
+      }
+      // #endregion
     };
 
     loadVotes();

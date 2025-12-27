@@ -135,6 +135,7 @@ export const CardStack: React.FC<CardStackProps> = ({
   const [allVoted, setAllVoted] = useState(false);
   const [votePollInterval, setVotePollInterval] = useState<NodeJS.Timeout | null>(null);
   const [hasProcessedVotes, setHasProcessedVotes] = useState(false); // Flag per prevenire riprocessamento
+  const processedVotesRef = React.useRef<{ userId: string; vote: 'like' | 'dislike' }[]>([]); // Ref per tracciare i voti processati
   
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [detailedMovie, setDetailedMovie] = useState<Movie | null>(null);
@@ -264,6 +265,9 @@ export const CardStack: React.FC<CardStackProps> = ({
     const movie = currentRoundMovies[currentIndex];
     if (!movie) return;
 
+    // Salva i voti correnti nel ref per usarli nel calcolo
+    processedVotesRef.current = currentMovieVotes;
+
     // #region agent log
     fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:254',message:'allVoted effect triggered',data:{allVoted,currentIndex,movieId:movie.id,round,votesCount:currentMovieVotes.length,votes:currentMovieVotes.map(v=>({userId:v.userId,vote:v.vote})),totalMembers,hasProcessedVotes},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
     // #endregion
@@ -271,9 +275,9 @@ export const CardStack: React.FC<CardStackProps> = ({
     // Segna che abbiamo processato i voti per questo film
     setHasProcessedVotes(true);
 
-    // Calcola se c'è un match (TUTTI i player devono aver votato like)
+    // Calcola se c'è un match (TUTTI i player devono aver votato like) usando i voti salvati nel ref
     const requiredLikes = getRequiredLikes(totalMembers);
-    const likeCount = currentMovieVotes.filter(v => v.vote === 'like').length;
+    const likeCount = processedVotesRef.current.filter(v => v.vote === 'like').length;
     const isMatch = likeCount >= requiredLikes;
 
     // #region agent log

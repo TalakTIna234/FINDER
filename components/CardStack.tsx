@@ -492,7 +492,7 @@ export const CardStack: React.FC<CardStackProps> = ({
         <HapticButton 
           impact="heavy"
           onClick={() => handleSwipe('left')}
-          disabled={isPaused || (isMultiplayer && (userVoted || !allVoted))}
+          disabled={isPaused || (isMultiplayer && userVoted)}
           className="group relative w-16 h-16 rounded-full backdrop-blur-2xl border border-red-500/30 dark:border-red-400/30 flex items-center justify-center text-red-500 dark:text-red-400 shadow-2xl disabled:opacity-30 disabled:cursor-not-allowed overflow-hidden transition-all duration-300 active:scale-95"
           style={{
             background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(220, 38, 38, 0.1) 100%)'

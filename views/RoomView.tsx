@@ -119,8 +119,14 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
             setRoom(initialRoom);
             
             console.log('[RoomView] Setting up subscription for room:', roomCode);
+            // #region agent log
+            fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'RoomView.tsx:122',message:'subscription setup',data:{roomCode,initialMembersCount:initialRoom.members.length},timestamp:Date.now(),sessionId:'debug-multiplayer',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+            // #endregion
             unsubscribe = roomService.subscribeToRoom(roomCode, (updatedRoom) => {
             if (updatedRoom) {
+              // #region agent log
+              fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'RoomView.tsx:125',message:'subscription callback received',data:{membersCount:updatedRoom.members.length,status:updatedRoom.status,memberIds:updatedRoom.members.map(m=>m.id)},timestamp:Date.now(),sessionId:'debug-multiplayer',runId:'run1',hypothesisId:'H1'})}).catch(()=>{});
+              // #endregion
               console.log('[RoomView] Room updated via subscription:', {
                 code: updatedRoom.code,
                 status: updatedRoom.status,
@@ -497,6 +503,9 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
   
   // Funzione per impostare "pronto"
   const setReady = async () => {
+    // #region agent log
+    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'RoomView.tsx:499',message:'setReady entry',data:{roomCode,currentUserId,hasRoomCode:!!roomCode,hasCurrentUserId:!!currentUserId},timestamp:Date.now(),sessionId:'debug-multiplayer',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+    // #endregion
     if (!roomCode) {
       console.error('[RoomView] setReady: roomCode is missing');
       alert('Errore: codice stanza non disponibile');
@@ -513,6 +522,9 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
     
     try {
       const success = await roomService.updateMemberStatus(roomCode, currentUserId, 'ready');
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'RoomView.tsx:515',message:'setReady updateMemberStatus result',data:{success},timestamp:Date.now(),sessionId:'debug-multiplayer',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+      // #endregion
       if (success) {
         console.log('[RoomView] Member status set to ready successfully');
         // La subscription aggiornerà automaticamente la stanza
@@ -530,6 +542,9 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
         alert('Errore nell\'impostazione dello status. Riprova.');
       }
     } catch (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'RoomView.tsx:530',message:'setReady exception',data:{errorMessage:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-multiplayer',runId:'run1',hypothesisId:'H5'})}).catch(()=>{});
+      // #endregion
       console.error('[RoomView] Error setting ready:', error);
       alert('Errore imprevisto. Controlla la console per dettagli.');
     }

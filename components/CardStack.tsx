@@ -389,10 +389,17 @@ export const CardStack: React.FC<CardStackProps> = ({
     } else {
       // Fine del round - pulisci i voti del round precedente
       if (isMultiplayer && roomId) {
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:394',message:'End of round - clearing votes',data:{roomId,round,likedThisRoundCount:likedThisRound.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'M'})}).catch(()=>{});
+        // #endregion
         await roomService.clearVotesForRound(roomId, round);
       }
       
       // Fine del round
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:401',message:'Round ended - determining next step',data:{likedThisRoundCount:likedThisRound.length,round,userId,roomId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'M'})}).catch(()=>{});
+      // #endregion
+      
       if (likedThisRound.length === 0) {
         setCurrentIndex(0);
         setLikedThisRound([]);

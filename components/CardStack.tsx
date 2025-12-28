@@ -212,10 +212,13 @@ export const CardStack: React.FC<CardStackProps> = ({
   }, [isMultiplayer, currentIndex, currentRoundMovies]);
 
   // Calcola il numero minimo di like necessari per un match
-  // Serve almeno la metà dei player (arrotondata per eccesso)
   // 1 player = 1 like, 2 players = 2 likes, 3 players = 2 likes, 4 players = 2 likes, ecc.
+  // Per 2 player serve il 100% (2 like), per gli altri almeno la metà arrotondata per eccesso
   const getRequiredLikes = (members: number): number => {
-    return Math.ceil(members / 2);
+    if (members === 2) {
+      return 2; // Per 2 player serve il 100% (2 like)
+    }
+    return Math.ceil(members / 2); // Per gli altri almeno la metà arrotondata per eccesso
   };
 
   // Carica i voti per il film corrente

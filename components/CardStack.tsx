@@ -388,20 +388,29 @@ export const CardStack: React.FC<CardStackProps> = ({
         await roomService.clearVotesForRound(roomId, round);
       }
       
+      // Prima pulisci i voti, POI resetta gli stati, POI cambia l'indice
+      // Questo evita che il polling trovi ancora i voti del film precedente
       const newIndex = currentIndex + 1;
-      // Reset IMMEDIATO di tutti gli stati prima di cambiare currentIndex per evitare match automatici
+      
+      // Reset IMMEDIATO di tutti gli stati PRIMA di cambiare currentIndex per evitare match automatici
       setUserVoted(false);
-      setAllVoted(false);
+      setAllVoted(false); // CRITICO: resetta allVoted PRIMA di cambiare currentIndex
       setCurrentMovieVotes([]);
-      setHasProcessedVotes(false); // Reset anche qui per sicurezza
-      setIsInstantMatch(false); // Reset anche qui per sicurezza
+      setHasProcessedVotes(false);
+      setIsInstantMatch(false);
+      processedVotesRef.current = []; // Reset anche il ref
       // Pulisci i dettagli del film precedente
       setDetailedMovie(null);
+      
       // Cambia l'indice DOPO aver resettato gli stati
       setCurrentIndex(newIndex);
       
       // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:388',message:'Moved to next movie - state updated',data:{newIndex,userId,roomId,isMultiplayer},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'M'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:403',message:'All states reset before moving to next movie',data:{newIndex,previousIndex:currentIndex,userId,roomId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'O'})}).catch(()=>{});
+      // #endregion
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:408',message:'Moved to next movie - state updated',data:{newIndex,userId,roomId,isMultiplayer},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'M'})}).catch(()=>{});
       // #endregion
     } else {
       // Fine del round - pulisci i voti del round precedente

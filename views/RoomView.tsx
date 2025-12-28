@@ -551,6 +551,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
   // Trova il membro corrente
   const currentMember = room?.members.find(m => m.id === currentUserId);
   const isCurrentMemberReady = currentMember?.status === 'ready';
+  const isHostReady = isHost && currentMember?.status === 'ready';
   
   // Funzione per impostare "pronto"
   const setReady = async () => {

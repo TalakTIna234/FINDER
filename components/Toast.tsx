@@ -71,7 +71,7 @@ export const useToast = () => {
   };
 
   const ToastContainer = () => (
-    <div className="fixed top-0 left-0 right-0 z-[9999] pointer-events-none">
+    <div className="fixed top-0 left-0 right-0 z-[9999] pointer-events-none flex justify-center">
       <AnimatePresence>
         {toasts.map((toast, index) => (
           <motion.div

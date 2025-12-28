@@ -1406,13 +1406,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                 <div className="relative z-10 flex items-center justify-center gap-3">
                   {isCurrentMemberReady ? (
                     <>
-                      <motion.div
-                        animate={{ scale: [1, 1.2, 1] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                        className="flex items-center justify-center w-5 h-5"
-                      >
-                        <Check size={18} className="text-green-300 dark:text-green-200" strokeWidth={3} style={{ display: 'block', transform: 'none' }} />
-                      </motion.div>
+                      <Check size={18} className="text-green-300 dark:text-green-200" strokeWidth={3} style={{ display: 'block' }} />
                       <span>Pronto</span>
                     </>
                   ) : (

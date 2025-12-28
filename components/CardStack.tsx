@@ -285,11 +285,19 @@ export const CardStack: React.FC<CardStackProps> = ({
     const movie = currentRoundMovies[currentIndex];
     if (!movie) return;
 
+    // Verifica che i voti siano effettivamente per questo film (safety check)
+    if (currentMovieVotes.length === 0) {
+      // #region agent log
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:285',message:'allVoted effect triggered but no votes found - exiting',data:{allVoted,currentIndex,movieId:movie.id,round,totalMembers,hasProcessedVotes},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'N'})}).catch(()=>{});
+      // #endregion
+      return; // Non processare se non ci sono voti
+    }
+
     // Salva i voti correnti nel ref per usarli nel calcolo
     processedVotesRef.current = currentMovieVotes;
 
     // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:262',message:'allVoted effect triggered',data:{allVoted,currentIndex,movieId:movie.id,round,votesCount:currentMovieVotes.length,votes:currentMovieVotes.map(v=>({userId:v.userId,vote:v.vote})),totalMembers,hasProcessedVotes},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:294',message:'allVoted effect triggered',data:{allVoted,currentIndex,movieId:movie.id,round,votesCount:currentMovieVotes.length,votes:currentMovieVotes.map(v=>({userId:v.userId,vote:v.vote})),totalMembers,hasProcessedVotes},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
     // #endregion
 
     // Segna IMMEDIATAMENTE che abbiamo processato i voti per questo film per evitare ri-esecuzioni

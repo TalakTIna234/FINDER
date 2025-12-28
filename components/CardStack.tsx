@@ -242,6 +242,7 @@ export const CardStack: React.FC<CardStackProps> = ({
     // Reset quando cambia il film (currentIndex cambia)
     setHasProcessedVotes(false);
     setIsInstantMatch(false);
+    processedVotesRef.current = []; // Reset anche il ref dei voti processati quando cambia film
     // Pulisci il timeout se esiste
     if (matchTimeoutRef.current) {
       clearTimeout(matchTimeoutRef.current);

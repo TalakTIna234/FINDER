@@ -250,7 +250,26 @@ export const CardStack: React.FC<CardStackProps> = ({
     }
 
     const loadVotes = async () => {
+      // Verifica che il film sia ancora quello corrente (safety check per evitare race conditions)
+      const currentMovie = currentRoundMovies[currentIndex];
+      if (!currentMovie || currentMovie.id !== movie.id) {
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:254',message:'loadVotes: movie changed, ignoring votes',data:{expectedMovieId:movie.id,currentMovieId:currentMovie?.id,currentIndex},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'P'})}).catch(()=>{});
+        // #endregion
+        return; // Il film è cambiato, non processare questi voti
+      }
+      
       const votes = await roomService.getVotesForMovie(roomId, movie.id, round);
+      
+      // Double-check: verifica che il film sia ancora quello corrente dopo la chiamata async
+      const currentMovieAfter = currentRoundMovies[currentIndex];
+      if (!currentMovieAfter || currentMovieAfter.id !== movie.id) {
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:264',message:'loadVotes: movie changed after async call, ignoring votes',data:{expectedMovieId:movie.id,currentMovieId:currentMovieAfter?.id,currentIndex},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'P'})}).catch(()=>{});
+        // #endregion
+        return; // Il film è cambiato durante la chiamata async, non processare questi voti
+      }
+      
       setCurrentMovieVotes(votes);
       
       // Controlla se l'utente ha già votato

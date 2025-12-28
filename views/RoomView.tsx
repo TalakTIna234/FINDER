@@ -1286,7 +1286,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
             </motion.button>
             
             {/* Effetti liquid glass - sistemato per evitare parti nere */}
-            <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-white/5 to-transparent dark:from-black/20 dark:via-black/10 dark:to-transparent rounded-[32px] pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/5 to-white/10 dark:from-transparent dark:via-black/10 dark:to-black/20 rounded-[32px] pointer-events-none" />
             <div className="absolute top-0 left-0 w-24 h-24 bg-red-600/10 dark:bg-red-500/10 blur-3xl rounded-full -ml-12 -mt-12 pointer-events-none" />
             <div className="absolute bottom-0 right-0 w-32 h-32 bg-purple-600/10 dark:bg-purple-500/10 blur-3xl rounded-full -mr-16 -mb-16 pointer-events-none" />
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-indigo-600/5 dark:bg-indigo-500/5 blur-2xl rounded-full pointer-events-none" />
@@ -1411,7 +1411,7 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                         transition={{ duration: 1.5, repeat: Infinity }}
                         className="flex items-center justify-center w-5 h-5"
                       >
-                        <Check size={18} className="text-green-300 dark:text-green-200" strokeWidth={3} style={{ display: 'block' }} />
+                        <Check size={18} className="text-green-300 dark:text-green-200" strokeWidth={3} style={{ display: 'block', transform: 'none' }} />
                       </motion.div>
                       <span>Pronto</span>
                     </>

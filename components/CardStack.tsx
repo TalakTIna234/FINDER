@@ -358,7 +358,7 @@ export const CardStack: React.FC<CardStackProps> = ({
 
   const moveToNextMovie = async () => {
     // #region agent log
-    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:328',message:'moveToNextMovie called',data:{currentIndex,totalMovies:currentRoundMovies.length,round,isMultiplayer},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'K'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:361',message:'moveToNextMovie called',data:{currentIndex,totalMovies:currentRoundMovies.length,round,isMultiplayer,userId,roomId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'M'})}).catch(()=>{});
     // #endregion
     
     // Pulisci il timeout se esiste
@@ -373,10 +373,14 @@ export const CardStack: React.FC<CardStackProps> = ({
     if (currentIndex < currentRoundMovies.length - 1) {
       // Pulisci i voti del film corrente prima di passare al prossimo
       if (isMultiplayer && roomId) {
+        // #region agent log
+        fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:376',message:'Clearing votes for round before moving to next movie',data:{roomId,round,currentIndex},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'M'})}).catch(()=>{});
+        // #endregion
         await roomService.clearVotesForRound(roomId, round);
       }
       
-      setCurrentIndex(prev => prev + 1);
+      const newIndex = currentIndex + 1;
+      setCurrentIndex(newIndex);
       setUserVoted(false);
       setAllVoted(false);
       setCurrentMovieVotes([]);
@@ -384,7 +388,7 @@ export const CardStack: React.FC<CardStackProps> = ({
       setDetailedMovie(null);
       
       // #region agent log
-      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:300',message:'Moved to next movie',data:{newIndex:currentIndex + 1},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'K'})}).catch(()=>{});
+      fetch('http://127.0.0.1:7244/ingest/5166dc20-fca9-468a-a9c7-67f3c292d0b1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CardStack.tsx:388',message:'Moved to next movie - state updated',data:{newIndex,userId,roomId,isMultiplayer},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'M'})}).catch(()=>{});
       // #endregion
     } else {
       // Fine del round - pulisci i voti del round precedente

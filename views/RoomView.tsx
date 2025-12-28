@@ -1361,17 +1361,56 @@ export const RoomView: React.FC<Props> = ({ onBack, onStartSession, mode }) => {
                   </HapticButton>
                 )}
                 
-                {/* Pulsante Inizia Match */}
-                <HapticButton 
-                  onClick={startSession}
-                  className="group w-full py-4 bg-gradient-to-br from-red-600 via-purple-700 to-indigo-800 dark:from-red-500 dark:via-purple-600 dark:to-indigo-700 text-white rounded-[24px] font-black text-base italic uppercase tracking-widest shadow-2xl shadow-purple-600/30 dark:shadow-purple-500/30 active:scale-[0.96] transition-all relative overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-10 transition-opacity" />
-                  <div className="flex items-center justify-center gap-2 relative z-10">
-                    <Play fill="currentColor" size={20} className="animate-pulse" />
-                    Inizia Match
-                  </div>
-                </HapticButton>
+                {/* Mostra "Pronto" se host non è ancora pronto, altrimenti "Inizia Match" */}
+                {!isHostReady ? (
+                  <HapticButton
+                    onClick={setReady}
+                    className={`group relative w-full py-4 rounded-[28px] font-black text-sm italic uppercase tracking-wider overflow-hidden transition-all ${
+                      'bg-gradient-to-br from-purple-600/40 via-pink-600/40 to-red-600/40 dark:from-purple-500/50 dark:via-pink-500/50 dark:to-red-500/50 border border-white/20 dark:border-white/30 text-white dark:text-white active:scale-[0.97]'
+                    } backdrop-blur-2xl shadow-2xl`}
+                  >
+                    {/* Effetti liquid glass */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-50" />
+                    <div className="absolute top-0 left-0 w-32 h-32 bg-purple-400/20 blur-3xl rounded-full -translate-x-1/2 -translate-y-1/2" />
+                    <div className="absolute bottom-0 right-0 w-40 h-40 bg-pink-400/20 blur-3xl rounded-full translate-x-1/3 translate-y-1/3" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
+                    
+                    {/* Shine effect animato */}
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+                      animate={{
+                        x: ['-100%', '200%'],
+                      }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        repeatDelay: 2,
+                        ease: "easeInOut"
+                      }}
+                    />
+                    
+                    <div className="relative z-10 flex items-center justify-center gap-3">
+                      <motion.div
+                        animate={{ rotate: [0, 360] }}
+                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                      >
+                        <Play size={16} className="ml-0.5" fill="currentColor" />
+                      </motion.div>
+                      <span>Pronto</span>
+                    </div>
+                  </HapticButton>
+                ) : (
+                  <HapticButton 
+                    onClick={startSession}
+                    className="group w-full py-4 bg-gradient-to-br from-red-600 via-purple-700 to-indigo-800 dark:from-red-500 dark:via-purple-600 dark:to-indigo-700 text-white rounded-[24px] font-black text-base italic uppercase tracking-widest shadow-2xl shadow-purple-600/30 dark:shadow-purple-500/30 active:scale-[0.96] transition-all relative overflow-hidden"
+                  >
+                    <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-10 transition-opacity" />
+                    <div className="flex items-center justify-center gap-2 relative z-10">
+                      <Play fill="currentColor" size={20} className="animate-pulse" />
+                      Inizia Match
+                    </div>
+                  </HapticButton>
+                )}
               </>
             ) : (
               /* Pulsante Pronto in stile liquid glass Apple/Netflix */
